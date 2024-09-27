@@ -1,7 +1,11 @@
 CLEAN_FILES = # deliberately empty, so we can append below.
 CXX=g++
 LDFLAGS= -lpthread -lrt
-CXXFLAGS= -g -std=c++11 -fno-builtin-memcmp -msse -msse4.2 -pipe -fPIC
+CXXFLAGS= -g -std=c++11 -fno-builtin-memcmp -pipe -fPIC
+ifeq ($(shell uname -m), x86_64)
+    CXXFLAGS += -msse -msse4.2
+endif
+
 PROFILING_FLAGS=-pg
 ARFLAGS = rs
 OPT=

@@ -91,7 +91,7 @@ static void SignalSetup() {
 int main(int argc, char* argv[]) {
   int port;
   if (argc < 2) {
-    printf("Usage: ./http_server port");
+    printf("Usage: ./http_server port\n");
   } else {
     port = atoi(argv[1]);
   }
