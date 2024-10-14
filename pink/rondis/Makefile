@@ -1,0 +1,43 @@
+CXX=g++
+LDFLAGS= -lpthread -lrt -lprotobuf
+CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp
+ifeq ($(shell uname -m), x86_64)
+    CXXFLAGS += -msse -msse4.2
+endif
+
+.PHONY: clean all
+
+all: rondis
+
+ifndef PINK_PATH
+  $(warning Warning: missing pink path, using default)
+  PINK_PATH=$(CURDIR)/../..
+endif
+PINK_INCLUDE_DIR=$(PINK_PATH)
+PINK_LIBRARY=$(PINK_PATH)/pink/lib/libpink.a
+
+ifndef SLASH_PATH
+  $(warning Warning: missing slash path, using default)
+	SLASH_PATH=$(CURDIR)/../third/slash
+endif
+SLASH_INCLUDE_DIR=$(SLASH_PATH)
+SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a
+
+ifndef RONDB_PATH
+  $(warning Warning: missing rondb path, using default)
+  exit 1
+endif
+RONDB_INCLUDE_DIR=$(RONDB_PATH)/include/storage/ndb
+RONDB_LIBRARY=$(RONDB_PATH)/lib/libndbclient.so
+
+CXXFLAGS+= -I$(PINK_INCLUDE_DIR) -I$(SLASH_INCLUDE_DIR)
+
+DEP_LIBS = $(PINK_LIBRARY) $(SLASH_LIBRARY)
+LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
+
+rondis: rondis.cc
+	$(CXX) $(CXXFLAGS) -I$(RONDB_INCLUDE_DIR) $^ -o$@ $(LDFLAGS) $(RONDB_LIBRARY)
+
+clean:
+	find . -name "*.[oda]" -exec rm -f {} \;
+	rm -rf ./rondis

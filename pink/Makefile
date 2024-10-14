@@ -39,11 +39,6 @@ endif
 
 #-----------------------------------------------
 
-RONDB_INCLUDE = $(RONDB_PATH)/include/storage/ndb
-RONDB_LIBRARY = $(RONDB_PATH)/lib/libndbclient.so
-
-LDFLAGS += $(RONDB_LIBRARY)
-
 SRC_DIR=src
 VERSION_CC=$(SRC_DIR)/build_version.cc
 LIB_SOURCES :=  $(VERSION_CC) \
@@ -101,7 +96,7 @@ ifndef DISABLE_WARNING_AS_ERROR
   WARNING_FLAGS += -Werror
 endif
 
-CXXFLAGS += $(WARNING_FLAGS) -I.. -I$(SLASH_INCLUDE_DIR) -I$(RONDB_INCLUDE) $(OPT)
+CXXFLAGS += $(WARNING_FLAGS) -I.. -I$(SLASH_INCLUDE_DIR) $(OPT)
 
 date := $(shell date +%F)
 git_sha := $(shell git rev-parse HEAD 2>/dev/null)
@@ -138,7 +133,7 @@ LIBRARY = $(LIBOUTPUT)/${LIBNAME}.a
 
 TESTS = test/pink_thread_test
 
-.PHONY: clean dbg static_lib all example
+.PHONY: clean dbg static_lib all rondis # example
 
 all: $(LIBRARY)
 
@@ -146,6 +141,9 @@ static_lib: $(LIBRARY)
 
 example:
 	@make -C examples PINK_PATH=$(CURDIR)/.. SLASH_PATH=$(SLASH_PATH) DEBUG_LEVEL=$(DEBUG_LEVEL)
+
+rondis:
+	@make -C rondis PINK_PATH=$(CURDIR)/.. SLASH_PATH=$(SLASH_PATH) DEBUG_LEVEL=$(DEBUG_LEVEL)
 
 check: $(LIBRARY)
 	@make -C test PINK_PATH=$(CURDIR)/.. SLASH_PATH=$(SLASH_PATH)
@@ -159,6 +157,7 @@ $(LIBRARY): $(LIBOBJECTS)
 
 clean:
 	make -C ./examples clean
+	make -C ./rondis clean
 	rm -f $(LIBRARY)
 	rm -rf $(CLEAN_FILES)
 	rm -rf $(LIBOUTPUT)
