@@ -98,10 +98,8 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 
-int rondb_connect(const char *connect_string,
-                  unsigned int num_connections)
+int initialize_connections(const char *connect_string)
 {
-    ndb_init();
     for (unsigned int i = 0; i < MAX_CONNECTIONS; i++)
     {
         rondb_conn[i] = new Ndb_cluster_connection(connect_string);
@@ -132,6 +130,17 @@ int rondb_connect(const char *connect_string,
             }
             rondb_ndb[i][j] = ndb;
         }
+    }
+    return 0; // Ensure to return 0 on success
+}
+
+int rondb_connect(const char *connect_string,
+                  unsigned int num_connections)
+{
+    ndb_init();
+    if (initialize_connections(connect_string) != 0)
+    {
+        return -1;
     }
     /**
      * Create NdbRecord's for all table accesses, they can be reused
