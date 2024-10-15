@@ -133,9 +133,9 @@ LIBRARY = $(LIBOUTPUT)/${LIBNAME}.a
 
 TESTS = test/pink_thread_test
 
-.PHONY: clean dbg static_lib all rondis # example
+.PHONY: clean dbg static_lib all rondis example
 
-all: $(LIBRARY)
+all: $(LIBRARY) rondis
 
 static_lib: $(LIBRARY)
 
