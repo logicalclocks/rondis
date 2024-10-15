@@ -28,7 +28,7 @@ ifndef RONDB_PATH
   exit 1
 endif
 RONDB_INCLUDE_DIR=$(RONDB_PATH)/include/storage/ndb
-RONDB_LIBRARY=$(RONDB_PATH)/lib/libndbclient.so
+RONDB_LIBRARY=$(RONDB_PATH)/lib/libndbclient_static.a
 
 CXXFLAGS+= -I$(PINK_INCLUDE_DIR) -I$(SLASH_INCLUDE_DIR) -I$(RONDB_INCLUDE_DIR)
 
