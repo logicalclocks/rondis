@@ -24,7 +24,7 @@ SLASH_INCLUDE_DIR=$(SLASH_PATH)
 SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a
 
 ifndef RONDB_PATH
-  $(warning Warning: missing rondb path, using default)
+  $(warning Warning: missing rondb path)
   exit 1
 endif
 RONDB_INCLUDE_DIR=$(RONDB_PATH)/include/storage/ndb
