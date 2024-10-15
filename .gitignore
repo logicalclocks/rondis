@@ -63,3 +63,7 @@ pink/tags
 pink/third
 *.d.*
 *.d
+
+docs/doxygen
+rondb-**/**
+rondis
