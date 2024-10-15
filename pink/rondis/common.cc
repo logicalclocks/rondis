@@ -1,0 +1,159 @@
+#include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include "pink/include/redis_conn.h"
+#include <ndbapi/NdbApi.hpp>
+#include <ndbapi/Ndb.hpp>
+
+
+#define MAX_CONNECTIONS 1
+#define MAX_NDB_PER_CONNECTION 1
+
+#define INLINE_VALUE_LEN 26500
+#define EXTENSION_VALUE_LEN 29500
+#define MAX_KEY_VALUE_LEN 3000
+
+#define READ_VALUE_ROWS 1
+#define RONDB_INTERNAL_ERROR 2
+#define READ_ERROR 626
+
+struct redis_main_key
+{
+    Uint32 null_bits;
+    char key_val[MAX_KEY_VALUE_LEN + 2];
+    Uint64 key_id;
+    Uint32 expiry_date;
+    Uint32 tot_value_len;
+    Uint32 num_rows;
+    Uint32 row_state;
+    Uint32 tot_key_len;
+    char value[INLINE_VALUE_LEN + 2];
+};
+
+struct redis_key_value
+{
+    Uint64 key_id;
+    Uint32 ordinal;
+    char value[EXTENSION_VALUE_LEN];
+};
+
+#define FOREIGN_KEY_RESTRICT_ERROR 256
+
+Ndb_cluster_connection *rondb_conn[MAX_CONNECTIONS];
+Ndb *rondb_ndb[MAX_CONNECTIONS][MAX_NDB_PER_CONNECTION];
+
+NdbDictionary::RecordSpecification primary_redis_main_key_spec[1];
+NdbDictionary::RecordSpecification all_redis_main_key_spec[8];
+
+NdbDictionary::RecordSpecification primary_redis_key_value_spec[2];
+NdbDictionary::RecordSpecification all_redis_key_value_spec[3];
+
+NdbDictionary::RecordSpecification primary_redis_main_field_spec[2];
+NdbDictionary::RecordSpecification all_redis_main_field_spec[7];
+
+NdbRecord *primary_redis_main_key_record = nullptr;
+NdbRecord *all_redis_main_key_record = nullptr;
+NdbRecord *primary_redis_key_value_record = nullptr;
+NdbRecord *all_redis_key_value_record = nullptr;
+NdbRecord *primary_redis_main_field_record = nullptr;
+NdbRecord *all_redis_main_field_record = nullptr;
+
+int execute_no_commit(NdbTransaction *trans, int &ret_code, bool allow_fail)
+{
+    printf("Execute NoCommit\n");
+    if (trans->execute(NdbTransaction::NoCommit) != 0)
+    {
+        ret_code = trans->getNdbError().code;
+        return -1;
+    }
+    return 0;
+}
+
+int execute_commit(Ndb *ndb, NdbTransaction *trans, int &ret_code)
+{
+    printf("Execute transaction\n");
+    if (trans->execute(NdbTransaction::Commit) != 0)
+    {
+        ret_code = trans->getNdbError().code;
+        return -1;
+    }
+    ndb->closeTransaction(trans);
+    return 0;
+}
+
+int write_formatted(char *buffer, int bufferSize, const char *format, ...)
+{
+    int len = 0;
+    va_list arguments;
+    va_start(arguments, format);
+    len = vsnprintf(buffer, bufferSize, format, arguments);
+    va_end(arguments);
+    return len;
+}
+
+void append_response(std::string *response, const char *app_str, Uint32 error_code)
+{
+    char buf[512];
+    printf("Add %s to response, error: %u\n", app_str, error_code);
+    if (error_code == 0)
+    {
+        write_formatted(buf, sizeof(buf), "-%s\r\n", app_str);
+        response->append(app_str);
+    }
+    else
+    {
+        write_formatted(buf, sizeof(buf), "-%s: %u\r\n", app_str, error_code);
+        response->append(app_str);
+    }
+}
+
+void failed_no_such_row_error(std::string *response)
+{
+    response->append("$-1\r\n");
+}
+
+void failed_read_error(std::string *response, Uint32 error_code)
+{
+    append_response(response,
+                    "RonDB Error: Failed to read key, code:",
+                    error_code);
+}
+
+void failed_create_table(std::string *response, Uint32 error_code)
+{
+    append_response(response,
+                    "RonDB Error: Failed to create table object",
+                    error_code);
+}
+
+void failed_create_transaction(std::string *response,
+                               Uint32 error_code)
+{
+    append_response(response,
+                    "RonDB Error: Failed to create transaction object",
+                    error_code);
+}
+
+void failed_execute(std::string *response, Uint32 error_code)
+{
+    append_response(response,
+                    "RonDB Error: Failed to execute transaction, code:",
+                    error_code);
+}
+
+void failed_get_operation(std::string *response)
+{
+    response->append("-RonDB Error: Failed to get NdbOperation object\r\n");
+}
+
+void failed_define(std::string *response, Uint32 error_code)
+{
+    append_response(response,
+                    "RonDB Error: Failed to define RonDB operation, code:",
+                    error_code);
+}
+
+void failed_large_key(std::string *response)
+{
+    response->append("-RonDB Error: Support up to 3000 bytes long keys\r\n");
+}
