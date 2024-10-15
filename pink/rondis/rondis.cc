@@ -8,6 +8,7 @@
 #include "pink/include/pink_conn.h"
 #include "pink/include/redis_conn.h"
 #include "pink/include/pink_thread.h"
+#include "rondis_handler.cc"
 
 using namespace pink;
 
@@ -40,29 +41,7 @@ int RondisConn::DealMessage(RedisCmdArgsType& argv, std::string* response) {
     printf("%s ", argv[i].c_str());
   }
   printf("\n");
-
-  std::string val = "result";
-  std::string res;
-  // set command
-  if (argv.size() == 3) {
-    response->append("+OK\r\n");
-    db[argv[1]] = argv[2];
-  } else if (argv.size() == 2) {
-    std::map<std::string, std::string>::iterator iter = db.find(argv[1]);
-    if (iter != db.end()) {
-      const std::string& val = iter->second;
-      response->append("*1\r\n$");
-      response->append(std::to_string(val.length()));
-      response->append("\r\n");
-      response->append(val);
-      response->append("\r\n");
-    } else {
-      response->append("$-1\r\n");
-    }
-  } else {
-    response->append("+OK\r\n");
-  }
-  return 0;
+  return rondb_redis_handler(argv, response, 0);
 }
 
 class RondisConnFactory : public ConnFactory {
