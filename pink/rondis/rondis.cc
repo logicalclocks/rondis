@@ -8,94 +8,158 @@
 #include "pink/include/pink_conn.h"
 #include "pink/include/redis_conn.h"
 #include "pink/include/pink_thread.h"
-#include "rondis_handler.cc"
+#include "common.h"
+#include "string/commands.h"
 
 using namespace pink;
 
+NdbDictionary::RecordSpecification primary_redis_main_key_spec[1];
+NdbDictionary::RecordSpecification all_redis_main_key_spec[8];
+NdbDictionary::RecordSpecification primary_redis_key_value_spec[2];
+NdbDictionary::RecordSpecification all_redis_key_value_spec[3];
+
 std::map<std::string, std::string> db;
+
+Ndb_cluster_connection *rondb_conn[MAX_CONNECTIONS];
+Ndb *rondb_ndb[MAX_CONNECTIONS][MAX_NDB_PER_CONNECTION];
+
+NdbRecord *primary_redis_main_key_record = nullptr;
+NdbRecord *all_redis_main_key_record = nullptr;
+NdbRecord *primary_redis_key_value_record = nullptr;
+NdbRecord *all_redis_key_value_record = nullptr;
 
 /*
     All STRING commands: https://redis.io/docs/latest/commands/?group=string
 */
-class RondisConn: public RedisConn {
- public:
-  RondisConn(int fd, const std::string& ip_port, ServerThread *thread,
-         void* worker_specific_data);
-  virtual ~RondisConn() = default;
+class RondisConn : public RedisConn
+{
+public:
+    RondisConn(int fd, const std::string &ip_port, ServerThread *thread,
+               void *worker_specific_data);
+    virtual ~RondisConn() = default;
 
- protected:
-  int DealMessage(RedisCmdArgsType& argv, std::string* response) override;
+protected:
+    int DealMessage(RedisCmdArgsType &argv, std::string *response) override;
 
- private:
+private:
 };
 
-RondisConn::RondisConn(int fd, const std::string& ip_port,
-               ServerThread *thread, void* worker_specific_data)
-    : RedisConn(fd, ip_port, thread) {
-  // Handle worker_specific_data ...
+RondisConn::RondisConn(int fd, const std::string &ip_port,
+                       ServerThread *thread, void *worker_specific_data)
+    : RedisConn(fd, ip_port, thread)
+{
+    // Handle worker_specific_data ...
 }
 
-int RondisConn::DealMessage(RedisCmdArgsType& argv, std::string* response) {
-  printf("Get redis message ");
-  for (int i = 0; i < argv.size(); i++) {
-    printf("%s ", argv[i].c_str());
-  }
-  printf("\n");
-  return rondb_redis_handler(argv, response, 0);
+int rondb_redis_handler(pink::RedisCmdArgsType &argv,
+                        std::string *response,
+                        int fd)
+{
+    if (argv.size() == 0)
+    {
+        return -1;
+    }
+    const char *cmd_str = argv[0].c_str();
+    unsigned int cmd_len = strlen(cmd_str);
+    if (cmd_len == 3)
+    {
+        const char *set_str = "set";
+        const char *get_str = "get";
+        if (memcmp(cmd_str, get_str, 3) == 0)
+        {
+            rondb_get_command(argv, response, fd);
+        }
+        else if (memcmp(cmd_str, set_str, 3) == 0)
+        {
+            rondb_set_command(argv, response, fd);
+        }
+        return 0;
+    }
+    else if (cmd_len == 1)
+    {
+        const char *shutdown_str = "shutdown";
+        if (memcmp(cmd_str, shutdown_str, 8) == 0)
+        {
+            printf("Shutdown Rondis server\n");
+            return -1;
+        }
+    }
+    return -1;
 }
 
-class RondisConnFactory : public ConnFactory {
- public:
-  virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port,
-                                ServerThread *thread,
-                                void* worker_specific_data) const {
-    return new RondisConn(connfd, ip_port, thread, worker_specific_data);
-  }
+int RondisConn::DealMessage(RedisCmdArgsType &argv, std::string *response)
+{
+    printf("Get redis message ");
+    for (int i = 0; i < argv.size(); i++)
+    {
+        printf("%s ", argv[i].c_str());
+    }
+    printf("\n");
+    return rondb_redis_handler(argv, response, 0);
+}
+
+class RondisConnFactory : public ConnFactory
+{
+public:
+    virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port,
+                                  ServerThread *thread,
+                                  void *worker_specific_data) const
+    {
+        return new RondisConn(connfd, ip_port, thread, worker_specific_data);
+    }
 };
 
 static std::atomic<bool> running(false);
 
-static void IntSigHandle(const int sig) {
-  printf("Catch Signal %d, cleanup...\n", sig);
-  running.store(false);
-  printf("server Exit");
+static void IntSigHandle(const int sig)
+{
+    printf("Catch Signal %d, cleanup...\n", sig);
+    running.store(false);
+    printf("server Exit");
 }
 
-static void SignalSetup() {
-  signal(SIGHUP, SIG_IGN);
-  signal(SIGPIPE, SIG_IGN);
-  signal(SIGINT, &IntSigHandle);
-  signal(SIGQUIT, &IntSigHandle);
-  signal(SIGTERM, &IntSigHandle);
+static void SignalSetup()
+{
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGINT, &IntSigHandle);
+    signal(SIGQUIT, &IntSigHandle);
+    signal(SIGTERM, &IntSigHandle);
 }
 
-int main(int argc, char* argv[]) {
-  if (argc < 2) {
-    printf("server will listen to 6379\n");
-  } else {
-    printf("server will listen to %d\n", atoi(argv[1]));
-  }
-  int my_port = (argc > 1) ? atoi(argv[1]) : 6379;
+int main(int argc, char *argv[])
+{
+    if (argc < 2)
+    {
+        printf("server will listen to 6379\n");
+    }
+    else
+    {
+        printf("server will listen to %d\n", atoi(argv[1]));
+    }
+    int my_port = (argc > 1) ? atoi(argv[1]) : 6379;
 
-  SignalSetup();
+    SignalSetup();
 
-  ConnFactory *conn_factory = new RondisConnFactory();
+    ConnFactory *conn_factory = new RondisConnFactory();
 
-  ServerThread* my_thread = NewHolyThread(my_port, conn_factory, 1000);
-  if (my_thread->StartThread() != 0) {
-    printf("StartThread error happened!\n");
-    exit(-1);
-  }
-  running.store(true);
-  while (running.load()) {
-    sleep(1);
-  }
-  my_thread->StopThread();
+    ServerThread *my_thread = NewHolyThread(my_port, conn_factory, 1000);
+    if (my_thread->StartThread() != 0)
+    {
+        printf("StartThread error happened!\n");
+        exit(-1);
+    }
+    running.store(true);
+    while (running.load())
+    {
+        sleep(1);
+    }
+    my_thread->StopThread();
 
-  delete my_thread;
-  delete conn_factory;
+    delete my_thread;
+    delete conn_factory;
 
-  return 0;
+    return 0;
 }
 
 int initialize_connections(const char *connect_string)

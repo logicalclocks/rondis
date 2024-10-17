@@ -5,9 +5,12 @@
 #include <ndbapi/NdbApi.hpp>
 #include <ndbapi/Ndb.hpp>
 
+#include "common.h"
 
 #define MAX_CONNECTIONS 1
 #define MAX_NDB_PER_CONNECTION 1
+
+#define FOREIGN_KEY_RESTRICT_ERROR 256
 
 #define INLINE_VALUE_LEN 26500
 #define EXTENSION_VALUE_LEN 29500
@@ -16,47 +19,6 @@
 #define READ_VALUE_ROWS 1
 #define RONDB_INTERNAL_ERROR 2
 #define READ_ERROR 626
-
-struct redis_main_key
-{
-    Uint32 null_bits;
-    char key_val[MAX_KEY_VALUE_LEN + 2];
-    Uint64 key_id;
-    Uint32 expiry_date;
-    Uint32 tot_value_len;
-    Uint32 num_rows;
-    Uint32 row_state;
-    Uint32 tot_key_len;
-    char value[INLINE_VALUE_LEN + 2];
-};
-
-struct redis_key_value
-{
-    Uint64 key_id;
-    Uint32 ordinal;
-    char value[EXTENSION_VALUE_LEN];
-};
-
-#define FOREIGN_KEY_RESTRICT_ERROR 256
-
-Ndb_cluster_connection *rondb_conn[MAX_CONNECTIONS];
-Ndb *rondb_ndb[MAX_CONNECTIONS][MAX_NDB_PER_CONNECTION];
-
-NdbDictionary::RecordSpecification primary_redis_main_key_spec[1];
-NdbDictionary::RecordSpecification all_redis_main_key_spec[8];
-
-NdbDictionary::RecordSpecification primary_redis_key_value_spec[2];
-NdbDictionary::RecordSpecification all_redis_key_value_spec[3];
-
-NdbDictionary::RecordSpecification primary_redis_main_field_spec[2];
-NdbDictionary::RecordSpecification all_redis_main_field_spec[7];
-
-NdbRecord *primary_redis_main_key_record = nullptr;
-NdbRecord *all_redis_main_key_record = nullptr;
-NdbRecord *primary_redis_key_value_record = nullptr;
-NdbRecord *all_redis_key_value_record = nullptr;
-NdbRecord *primary_redis_main_field_record = nullptr;
-NdbRecord *all_redis_main_field_record = nullptr;
 
 int execute_no_commit(NdbTransaction *trans, int &ret_code, bool allow_fail)
 {

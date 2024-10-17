@@ -28,16 +28,21 @@ ifndef RONDB_PATH
   exit 1
 endif
 RONDB_INCLUDE_DIR=$(RONDB_PATH)/include/storage/ndb
-RONDB_LIBRARY=$(RONDB_PATH)/lib/libndbclient_static.a
+RONDB_LIBRARY=$(RONDB_PATH)/lib/libndbclient.so
 
 CXXFLAGS+= -I$(PINK_INCLUDE_DIR) -I$(SLASH_INCLUDE_DIR) -I$(RONDB_INCLUDE_DIR)
 
 DEP_LIBS = $(PINK_LIBRARY) $(SLASH_LIBRARY) $(RONDB_LIBRARY)
-LDFLAGS := $(DEP_LIBS) $(LDFLAGS) 
+LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
-rondis: rondis.cc
-	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
+# Use find to locate all .cc files in subdirectories
+SOURCES = $(CURDIR)/rondis.cc $(CURDIR)/common.cc $(CURDIR)/string/commands.cc $(CURDIR)/string/db_interactions.cc
+OBJECTS = $(SOURCES:.cc=.o)
 
+# Target to build the executable "rondis"
+rondis: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS) $(LDFLAGS)
+
+# Clean target to remove generated files
 clean:
-	find . -name "*.[oda]" -exec rm -f {} \;
-	rm -rf ./rondis
+	rm -f $(OBJECTS) rondis
