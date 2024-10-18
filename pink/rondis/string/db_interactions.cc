@@ -8,10 +8,10 @@
 #include "../common.h"
 #include "init.h"
 
-NdbRecord *primary_redis_main_key_record = nullptr;
-NdbRecord *all_redis_main_key_record = nullptr;
-NdbRecord *primary_redis_key_value_record = nullptr;
-NdbRecord *all_redis_key_value_record = nullptr;
+NdbRecord *pk_key_record = nullptr;
+NdbRecord *entire_key_record = nullptr;
+NdbRecord *pk_value_record = nullptr;
+NdbRecord *entire_value_record = nullptr;
 
 int create_key_row(std::string *response,
                    Ndb *ndb,
@@ -242,9 +242,9 @@ int get_simple_key_row(std::string *response,
     const Uint32 mask = 0xFE;
     const unsigned char *mask_ptr = (const unsigned char *)&mask;
     const NdbOperation *read_op = trans->readTuple(
-        primary_redis_main_key_record,
+        pk_key_record,
         (const char *)row,
-        all_redis_main_key_record,
+        entire_key_record,
         (char *)row,
         NdbOperation::LM_CommittedRead,
         mask_ptr);
@@ -310,9 +310,9 @@ int get_value_rows(std::string *response,
     {
         row[row_index].ordinal = index;
         const NdbOperation *read_op = trans->readTuple(
-            primary_redis_key_value_record,
+            pk_value_record,
             (const char *)&row,
-            all_redis_key_value_record,
+            entire_value_record,
             (char *)&row,
             NdbOperation::LM_CommittedRead);
         if (read_op == nullptr)
@@ -380,9 +380,9 @@ int get_complex_key_row(std::string *response,
     const Uint32 mask = 0xFE;
     const unsigned char *mask_ptr = (const unsigned char *)&mask;
     const NdbOperation *read_op = trans->readTuple(
-        primary_redis_main_key_record,
+        pk_key_record,
         (const char *)row,
-        all_redis_main_key_record,
+        entire_key_record,
         (char *)row,
         NdbOperation::LM_Read,
         mask_ptr);

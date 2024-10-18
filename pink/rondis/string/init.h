@@ -28,10 +28,18 @@ struct value_table
     char value[EXTENSION_VALUE_LEN];
 };
 
-extern NdbRecord *primary_redis_main_key_record;
-extern NdbRecord *all_redis_main_key_record;
-extern NdbRecord *primary_redis_key_value_record;
-extern NdbRecord *all_redis_key_value_record;
+/*
+    NdbRecords are used for serialization. They map columns of a table to fields in a struct.
+    For each table we interact with, we define:
+    - one NdbRecord defining the columns to filter the row we want to read
+    - one NdbRecord defining the columns we want to fetch
+*/
+
+extern NdbRecord *pk_key_record;
+extern NdbRecord *entire_key_record;
+
+extern NdbRecord *pk_value_record;
+extern NdbRecord *entire_value_record;
 
 int init_key_record_specs(NdbDictionary::Dictionary *dict);
 int init_value_record_specs(NdbDictionary::Dictionary *dict);

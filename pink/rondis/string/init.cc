@@ -53,12 +53,12 @@ int init_key_record_specs(NdbDictionary::Dictionary *dict)
     primary_redis_main_key_spec[0].offset = offsetof(struct key_table, key_val);
     primary_redis_main_key_spec[0].nullbit_byte_offset = 0;
     primary_redis_main_key_spec[0].nullbit_bit_in_byte = 0;
-    primary_redis_main_key_record =
+    pk_key_record =
         dict->createRecord(tab,
                            primary_redis_main_key_spec,
                            1,
                            sizeof(primary_redis_main_key_spec[0]));
-    if (primary_redis_main_key_record == nullptr)
+    if (pk_key_record == nullptr)
     {
         printf("Failed creating record for key table of STRING\n");
         return -1;
@@ -104,11 +104,11 @@ int init_key_record_specs(NdbDictionary::Dictionary *dict)
     all_redis_main_key_spec[7].nullbit_byte_offset = 0;
     all_redis_main_key_spec[7].nullbit_bit_in_byte = 0;
 
-    all_redis_main_key_record = dict->createRecord(tab,
-                                                   all_redis_main_key_spec,
-                                                   8,
-                                                   sizeof(all_redis_main_key_spec[0]));
-    if (all_redis_main_key_record == nullptr)
+    entire_key_record = dict->createRecord(tab,
+                                           all_redis_main_key_spec,
+                                           8,
+                                           sizeof(all_redis_main_key_spec[0]));
+    if (entire_key_record == nullptr)
     {
         printf("Failed creating record for key table of STRING\n");
         return -1;
@@ -148,11 +148,11 @@ int init_value_record_specs(NdbDictionary::Dictionary *dict)
     primary_redis_key_value_spec[1].nullbit_byte_offset = 0;
     primary_redis_key_value_spec[1].nullbit_bit_in_byte = 0;
 
-    primary_redis_key_value_record = dict->createRecord(tab,
-                                                        primary_redis_key_value_spec,
-                                                        2,
-                                                        sizeof(primary_redis_key_value_spec[0]));
-    if (primary_redis_key_value_record == nullptr)
+    pk_value_record = dict->createRecord(tab,
+                                         primary_redis_key_value_spec,
+                                         2,
+                                         sizeof(primary_redis_key_value_spec[0]));
+    if (pk_value_record == nullptr)
     {
         printf("Failed creating record for value table of STRING\n");
         return -1;
@@ -173,11 +173,11 @@ int init_value_record_specs(NdbDictionary::Dictionary *dict)
     all_redis_key_value_spec[2].nullbit_byte_offset = 0;
     all_redis_key_value_spec[2].nullbit_bit_in_byte = 0;
 
-    all_redis_key_value_record = dict->createRecord(tab,
-                                                    all_redis_key_value_spec,
-                                                    3,
-                                                    sizeof(all_redis_key_value_spec[0]));
-    if (all_redis_key_value_record == nullptr)
+    entire_value_record = dict->createRecord(tab,
+                                             all_redis_key_value_spec,
+                                             3,
+                                             sizeof(all_redis_key_value_spec[0]));
+    if (entire_value_record == nullptr)
     {
         printf("Failed creating record for value table of STRING\n");
         return -1;
