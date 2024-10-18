@@ -275,6 +275,23 @@ int get_simple_key_row(std::string *response,
         ndb->closeTransaction(trans);
         return 0;
     }
+
+    /*
+        // TODO: Replace hard-coded error numbers with generic error handling
+        //     The NDB API does not supply these error codes itself so it would be guess-work
+
+        NdbError::Status status = read_op->getNdbError().status;
+        if (status == NdbError::Success)
+        {
+            return 0;
+        }
+        else if (status == NdbError::PermanentError)
+        {
+            failed_no_such_row_error(response);
+            return READ_ERROR;
+        }
+    */
+
     int ret_code = read_op->getNdbError().code;
     if (ret_code == READ_ERROR)
     {
