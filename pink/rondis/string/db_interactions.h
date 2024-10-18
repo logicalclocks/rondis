@@ -19,7 +19,7 @@ int create_key_row(std::string *response,
                    Uint32 row_state,
                    char *buf);
 
-int create_key_value_row(std::string *response,
+int create_value_row(std::string *response,
                          Ndb *ndb,
                          const NdbDictionary::Dictionary *dict,
                          NdbTransaction *trans,
@@ -29,11 +29,22 @@ int create_key_value_row(std::string *response,
                          Uint32 ordinal,
                          char *buf);
 
+/*
+    Since the beginning of the value is saved within the key table, it
+    can suffice to read the key table to get the value. If the value is
+*/
 int get_simple_key_row(std::string *response,
                        const NdbDictionary::Table *tab,
                        Ndb *ndb,
                        struct key_table *row,
                        Uint32 key_len);
+
+int get_complex_key_row(std::string *response,
+                        const NdbDictionary::Dictionary *dict,
+                        const NdbDictionary::Table *tab,
+                        Ndb *ndb,
+                        struct key_table *row,
+                        Uint32 key_len);
 
 int get_value_rows(std::string *response,
                    Ndb *ndb,
@@ -43,13 +54,6 @@ int get_value_rows(std::string *response,
                    const Uint64 key_id,
                    const Uint32 this_value_len,
                    const Uint32 tot_value_len);
-
-int get_complex_key_row(std::string *response,
-                        const NdbDictionary::Dictionary *dict,
-                        const NdbDictionary::Table *tab,
-                        Ndb *ndb,
-                        struct key_table *row,
-                        Uint32 key_len);
 
 int rondb_get_key_id(const NdbDictionary::Table *tab,
                      Uint64 &key_id,

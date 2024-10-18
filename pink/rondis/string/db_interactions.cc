@@ -175,15 +175,15 @@ int create_key_row(std::string *response,
     }
 }
 
-int create_key_value_row(std::string *response,
-                         Ndb *ndb,
-                         const NdbDictionary::Dictionary *dict,
-                         NdbTransaction *trans,
-                         const char *start_value_ptr,
-                         Uint64 key_id,
-                         Uint32 this_value_len,
-                         Uint32 ordinal,
-                         char *buf)
+int create_value_row(std::string *response,
+                     Ndb *ndb,
+                     const NdbDictionary::Dictionary *dict,
+                     NdbTransaction *trans,
+                     const char *start_value_ptr,
+                     Uint64 key_id,
+                     Uint32 this_value_len,
+                     Uint32 ordinal,
+                     char *buf)
 {
     const NdbDictionary::Table *tab = dict->getTable("redis_key_values");
     if (tab == nullptr)
@@ -409,36 +409,38 @@ int get_complex_key_row(std::string *response,
         failed_get_operation(response);
         return RONDB_INTERNAL_ERROR;
     }
+    
     if (trans->execute(NdbTransaction::NoCommit,
-                       NdbOperation::AbortOnError) != -1)
+                       NdbOperation::AbortOnError) != 0)
     {
-        char buf[20];
-        int len = write_formatted(buf,
-                                  sizeof(buf),
-                                  "$%u\r\n",
-                                  row->tot_value_len);
-
-        response->reserve(row->tot_value_len + len + 3);
-        response->append(buf);
-        Uint32 this_value_len = row->value[0] + (row->value[1] << 8);
-        response->append((const char *)&row->value[2], this_value_len);
-        int ret_code = get_value_rows(response,
-                                      ndb,
-                                      dict,
-                                      trans,
-                                      row->num_rows,
-                                      row->key_id,
-                                      this_value_len,
-                                      row->tot_value_len);
-        if (ret_code == 0)
-        {
-            response->append("\r\n");
-            return 0;
-        }
+        failed_read_error(response,
+                          trans->getNdbError().code);
         return RONDB_INTERNAL_ERROR;
     }
-    failed_read_error(response,
-                      trans->getNdbError().code);
+
+    char buf[20];
+    int len = write_formatted(buf,
+                              sizeof(buf),
+                              "$%u\r\n",
+                              row->tot_value_len);
+
+    response->reserve(row->tot_value_len + len + 3);
+    response->append(buf);
+    Uint32 this_value_len = row->value[0] + (row->value[1] << 8);
+    response->append((const char *)&row->value[2], this_value_len);
+    int ret_code = get_value_rows(response,
+                                  ndb,
+                                  dict,
+                                  trans,
+                                  row->num_rows,
+                                  row->key_id,
+                                  this_value_len,
+                                  row->tot_value_len);
+    if (ret_code == 0)
+    {
+        response->append("\r\n");
+        return 0;
+    }
     return RONDB_INTERNAL_ERROR;
 }
 

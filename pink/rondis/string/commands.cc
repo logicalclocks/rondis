@@ -142,7 +142,7 @@ void rondb_set_command(pink::RedisCmdArgsType &argv,
             {
                 this_value_len = EXTENSION_VALUE_LEN;
             }
-            int ret_code = create_key_value_row(response,
+            int ret_code = create_value_row(response,
                                                 ndb,
                                                 dict,
                                                 trans,
