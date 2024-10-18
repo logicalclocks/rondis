@@ -128,41 +128,6 @@ static void SignalSetup()
     signal(SIGTERM, &IntSigHandle);
 }
 
-int main(int argc, char *argv[])
-{
-    if (argc < 2)
-    {
-        printf("server will listen to 6379\n");
-    }
-    else
-    {
-        printf("server will listen to %d\n", atoi(argv[1]));
-    }
-    int my_port = (argc > 1) ? atoi(argv[1]) : 6379;
-
-    SignalSetup();
-
-    ConnFactory *conn_factory = new RondisConnFactory();
-
-    ServerThread *my_thread = NewHolyThread(my_port, conn_factory, 1000);
-    if (my_thread->StartThread() != 0)
-    {
-        printf("StartThread error happened!\n");
-        exit(-1);
-    }
-    running.store(true);
-    while (running.load())
-    {
-        sleep(1);
-    }
-    my_thread->StopThread();
-
-    delete my_thread;
-    delete conn_factory;
-
-    return 0;
-}
-
 int initialize_connections(const char *connect_string)
 {
     for (unsigned int i = 0; i < MAX_CONNECTIONS; i++)
@@ -170,33 +135,34 @@ int initialize_connections(const char *connect_string)
         rondb_conn[i] = new Ndb_cluster_connection(connect_string);
         if (rondb_conn[i]->connect() != 0)
         {
-            printf("Kilroy C\n");
+            printf("Failed with RonDB MGMd connection nr. %d\n", i);
             return -1;
         }
-        printf("Connected to cluster\n");
+        printf("RonDB MGMd connection nr. %d is ready\n", i);
         if (rondb_conn[i]->wait_until_ready(30, 0) != 0)
         {
-            printf("Kilroy CI\n");
+            printf("Failed with RonDB data node connection nr. %d\n", i);
             return -1;
         }
-        printf("Connected to started cluster\n");
+        printf("RonDB data node connection nr. %d is ready\n", i);
         for (unsigned int j = 0; j < MAX_NDB_PER_CONNECTION; j++)
         {
             Ndb *ndb = new Ndb(rondb_conn[i], "redis_0");
             if (ndb == nullptr)
             {
-                printf("Kilroy CII\n");
+                printf("Failed creating Ndb object nr. %d for cluster connection %d\n", j, i);
                 return -1;
             }
             if (ndb->init() != 0)
             {
-                printf("Kilroy CIII\n");
+                printf("Failed initializing Ndb object nr. %d for cluster connection %d\n", j, i);
                 return -1;
             }
+            printf("Successfully initialized Ndb object nr. %d for cluster connection %d\n", j, i);
             rondb_ndb[i][j] = ndb;
         }
     }
-    return 0; // Ensure to return 0 on success
+    return 0;
 }
 
 /**
@@ -366,10 +332,11 @@ int init_value_record_specs(NdbDictionary::Dictionary *dict)
     return 0;
 }
 
-int rondb_connect(const char *connect_string,
-                  unsigned int num_connections)
+int setup_rondb(const char *connect_string)
 {
+    // Creating static thread-safe Ndb objects for all connections
     ndb_init();
+
     int res = initialize_connections(connect_string);
     if (res != 0)
     {
@@ -391,4 +358,49 @@ int rondb_connect(const char *connect_string,
 void rondb_end()
 {
     ndb_end(0);
+}
+
+int main(int argc, char *argv[])
+{
+    int port = 6379;
+    char *connect_string = "localhost:13000";
+    if (argc != 3)
+    {
+        printf("Not receiving 2 arguments, just using defaults\n");
+    }
+    else
+    {
+        port = atoi(argv[1]);
+        connect_string = argv[2];
+    }
+    printf("Server will listen to %d and connect to MGMd at %s\n", port, connect_string);
+
+    // TODO: Distribute resources across pink threads
+    if (setup_rondb(connect_string) != 0)
+    {
+        printf("Failed to setup RonDB environment\n");
+        return -1;
+    }
+    SignalSetup();
+
+    ConnFactory *conn_factory = new RondisConnFactory();
+
+    ServerThread *my_thread = NewHolyThread(port, conn_factory, 1000);
+    if (my_thread->StartThread() != 0)
+    {
+        printf("StartThread error happened!\n");
+        return -1;
+    }
+
+    running.store(true);
+    while (running.load())
+    {
+        sleep(1);
+    }
+    my_thread->StopThread();
+
+    delete my_thread;
+    delete conn_factory;
+
+    return 0;
 }
