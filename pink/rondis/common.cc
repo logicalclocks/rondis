@@ -12,13 +12,6 @@
 
 #define FOREIGN_KEY_RESTRICT_ERROR 256
 
-#define INLINE_VALUE_LEN 26500
-#define EXTENSION_VALUE_LEN 29500
-#define MAX_KEY_VALUE_LEN 3000
-
-#define READ_VALUE_ROWS 1
-#define RONDB_INTERNAL_ERROR 2
-#define READ_ERROR 626
 
 int execute_no_commit(NdbTransaction *trans, int &ret_code, bool allow_fail)
 {
@@ -71,6 +64,7 @@ void append_response(std::string *response, const char *app_str, Uint32 error_co
 
 void failed_no_such_row_error(std::string *response)
 {
+    // Redis stuff
     response->append("$-1\r\n");
 }
 

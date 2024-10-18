@@ -6,6 +6,12 @@
 #include <ndbapi/Ndb.hpp>
 
 #include "../common.h"
+#include "init.h"
+
+NdbRecord *primary_redis_main_key_record = nullptr;
+NdbRecord *all_redis_main_key_record = nullptr;
+NdbRecord *primary_redis_key_value_record = nullptr;
+NdbRecord *all_redis_key_value_record = nullptr;
 
 int create_key_row(std::string *response,
                    Ndb *ndb,
@@ -218,6 +224,8 @@ int get_simple_key_row(std::string *response,
                        struct redis_main_key *row,
                        Uint32 key_len)
 {
+    // This is (usually) a local operation to calculate the correct data node, using the
+    // hash of the pk value.
     NdbTransaction *trans = ndb->startTransaction(tab,
                                                   &row->key_val[0],
                                                   key_len + 2);

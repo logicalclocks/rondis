@@ -7,6 +7,7 @@
 
 #include "db_interactions.h"
 #include "../common.h"
+#include "init.h"
 
 void rondb_get_command(pink::RedisCmdArgsType &argv,
                        std::string *response,
@@ -32,8 +33,10 @@ void rondb_get_command(pink::RedisCmdArgsType &argv,
         return;
     }
     struct redis_main_key row_object;
-    char key_buf[MAX_KEY_VALUE_LEN + 2];
+    // varbinary -> first 2 bytes are length if bigger than 255
+    // start copying from 3rd byte
     memcpy(&row_object.key_val[2], key_str, key_len);
+    // Length as little endian
     row_object.key_val[0] = key_len & 255;
     row_object.key_val[1] = key_len >> 8;
     {
