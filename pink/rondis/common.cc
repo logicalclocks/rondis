@@ -1,5 +1,3 @@
-#include <string.h>
-#include <stdio.h>
 #include <stdarg.h>
 #include "pink/include/redis_conn.h"
 #include <ndbapi/NdbApi.hpp>
