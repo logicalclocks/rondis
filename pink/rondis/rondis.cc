@@ -13,12 +13,6 @@
 
 using namespace pink;
 
-NdbDictionary::RecordSpecification primary_redis_main_key_spec[1];
-NdbDictionary::RecordSpecification all_redis_main_key_spec[8];
-
-NdbDictionary::RecordSpecification primary_redis_key_value_spec[2];
-NdbDictionary::RecordSpecification all_redis_key_value_spec[3];
-
 std::map<std::string, std::string> db;
 
 Ndb_cluster_connection *rondb_conn[MAX_CONNECTIONS];
@@ -26,6 +20,7 @@ Ndb *rondb_ndb[MAX_CONNECTIONS][MAX_NDB_PER_CONNECTION];
 
 NdbRecord *primary_redis_main_key_record = nullptr;
 NdbRecord *all_redis_main_key_record = nullptr;
+
 NdbRecord *primary_redis_key_value_record = nullptr;
 NdbRecord *all_redis_key_value_record = nullptr;
 
@@ -199,6 +194,9 @@ int init_key_record_specs(NdbDictionary::Dictionary *dict)
         return -1;
     }
 
+    NdbDictionary::RecordSpecification primary_redis_main_key_spec[1];
+    NdbDictionary::RecordSpecification all_redis_main_key_spec[8];
+
     primary_redis_main_key_spec[0].column = key_val_col;
     primary_redis_main_key_spec[0].offset = offsetof(struct redis_main_key, key_val);
     primary_redis_main_key_spec[0].nullbit_byte_offset = 0;
@@ -284,6 +282,10 @@ int init_value_record_specs(NdbDictionary::Dictionary *dict)
         printf("Failed getting columns for value table of STRING\n");
         return -1;
     }
+
+    NdbDictionary::RecordSpecification primary_redis_key_value_spec[2];
+    NdbDictionary::RecordSpecification all_redis_key_value_spec[3];
+
     primary_redis_key_value_spec[0].column = key_id_col;
     primary_redis_key_value_spec[0].offset = offsetof(struct redis_key_value, key_id);
     primary_redis_key_value_spec[0].nullbit_byte_offset = 0;
