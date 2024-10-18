@@ -389,6 +389,7 @@ int main(int argc, char *argv[])
     if (my_thread->StartThread() != 0)
     {
         printf("StartThread error happened!\n");
+        rondb_end();
         return -1;
     }
 
@@ -401,6 +402,8 @@ int main(int argc, char *argv[])
 
     delete my_thread;
     delete conn_factory;
+
+    rondb_end();
 
     return 0;
 }
