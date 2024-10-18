@@ -1,12 +1,25 @@
 #include <ndbapi/NdbApi.hpp>
 #include <ndbapi/Ndb.hpp>
 
-#define INLINE_VALUE_LEN 26500
-#define EXTENSION_VALUE_LEN 29500
-#define MAX_KEY_VALUE_LEN 3000
+/*
+    NdbRecords are used for serialization. They map columns of a table to fields in a struct.
+    For each table we interact with, we define:
+    - one NdbRecord defining the columns to filter the row we want to read
+    - one NdbRecord defining the columns we want to fetch
+*/
+
+/*
+    KEY TABLE
+*/
 
 #define KEY_TABLE_NAME "redis_string_keys"
-#define VALUE_TABLE_NAME "redis_string_values"
+#define MAX_KEY_VALUE_LEN 3000
+#define INLINE_VALUE_LEN 26500
+
+int init_key_records(NdbDictionary::Dictionary *dict);
+
+extern NdbRecord *pk_key_record;
+extern NdbRecord *entire_key_record;
 
 struct key_table
 {
@@ -21,25 +34,21 @@ struct key_table
     char value[INLINE_VALUE_LEN + 2];
 };
 
+/*
+    VALUE TABLE
+*/
+
+#define VALUE_TABLE_NAME "redis_string_values"
+#define EXTENSION_VALUE_LEN 29500
+
+int init_value_records(NdbDictionary::Dictionary *dict);
+
+extern NdbRecord *pk_value_record;
+extern NdbRecord *entire_value_record;
+
 struct value_table
 {
     Uint64 key_id;
     Uint32 ordinal;
     char value[EXTENSION_VALUE_LEN];
 };
-
-/*
-    NdbRecords are used for serialization. They map columns of a table to fields in a struct.
-    For each table we interact with, we define:
-    - one NdbRecord defining the columns to filter the row we want to read
-    - one NdbRecord defining the columns we want to fetch
-*/
-
-extern NdbRecord *pk_key_record;
-extern NdbRecord *entire_key_record;
-
-extern NdbRecord *pk_value_record;
-extern NdbRecord *entire_value_record;
-
-int init_key_record_specs(NdbDictionary::Dictionary *dict);
-int init_value_record_specs(NdbDictionary::Dictionary *dict);

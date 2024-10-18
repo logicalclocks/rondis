@@ -169,13 +169,13 @@ int setup_rondb(const char *connect_string)
     Ndb *ndb = rondb_ndb[0][0];
     NdbDictionary::Dictionary *dict = ndb->getDictionary();
 
-    res = init_key_record_specs(dict);
+    res = init_key_records(dict);
     if (res != 0)
     {
         return res;
     }
 
-    return init_value_record_specs(dict);
+    return init_value_records(dict);
 }
 
 void rondb_end()

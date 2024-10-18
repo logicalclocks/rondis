@@ -16,7 +16,7 @@
  * Create NdbRecord's for all table accesses, they can be reused
  * for all Ndb objects.
  */
-int init_key_record_specs(NdbDictionary::Dictionary *dict)
+int init_key_records(NdbDictionary::Dictionary *dict)
 {
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
@@ -116,7 +116,7 @@ int init_key_record_specs(NdbDictionary::Dictionary *dict)
     return 0;
 }
 
-int init_value_record_specs(NdbDictionary::Dictionary *dict)
+int init_value_records(NdbDictionary::Dictionary *dict)
 {
     const NdbDictionary::Table *tab = dict->getTable("redis_key_value");
     if (tab == nullptr)
