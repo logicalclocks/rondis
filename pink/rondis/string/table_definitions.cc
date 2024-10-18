@@ -9,7 +9,7 @@
 #include "pink/include/redis_conn.h"
 #include "pink/include/pink_thread.h"
 #include "../common.h"
-#include "init.h"
+#include "table_definitions.h"
 #include "commands.h"
 
 /**
@@ -184,4 +184,15 @@ int init_value_records(NdbDictionary::Dictionary *dict)
     }
 
     return 0;
+}
+
+int init_string_records(NdbDictionary::Dictionary *dict)
+{
+    int res = init_key_records(dict);
+    if (res != 0)
+    {
+        return res;
+    }
+
+    return init_value_records(dict);
 }

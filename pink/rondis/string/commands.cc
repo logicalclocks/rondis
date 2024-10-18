@@ -7,7 +7,7 @@
 
 #include "db_interactions.h"
 #include "../common.h"
-#include "init.h"
+#include "table_definitions.h"
 
 void rondb_get_command(pink::RedisCmdArgsType &argv,
                        std::string *response,

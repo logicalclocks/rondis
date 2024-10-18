@@ -6,7 +6,7 @@
 #include <ndbapi/Ndb.hpp>
 
 #include "../common.h"
-#include "init.h"
+#include "table_definitions.h"
 
 NdbRecord *pk_key_record = nullptr;
 NdbRecord *entire_key_record = nullptr;

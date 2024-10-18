@@ -9,7 +9,7 @@
 #include "pink/include/redis_conn.h"
 #include "pink/include/pink_thread.h"
 #include "common.h"
-#include "string/init.h"
+#include "string/table_definitions.h"
 #include "string/commands.h"
 
 using namespace pink;
@@ -169,13 +169,7 @@ int setup_rondb(const char *connect_string)
     Ndb *ndb = rondb_ndb[0][0];
     NdbDictionary::Dictionary *dict = ndb->getDictionary();
 
-    res = init_key_records(dict);
-    if (res != 0)
-    {
-        return res;
-    }
-
-    return init_value_records(dict);
+    return init_string_records(dict);
 }
 
 void rondb_end()

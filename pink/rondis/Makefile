@@ -1,6 +1,6 @@
 CXX=g++
 LDFLAGS= -lpthread -lrt -lprotobuf
-CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp
+CXXFLAGS=-O2 -std=c++17 -fno-builtin-memcmp
 ifeq ($(shell uname -m), x86_64)
     CXXFLAGS += -msse -msse4.2
 endif
@@ -36,7 +36,7 @@ DEP_LIBS = $(PINK_LIBRARY) $(SLASH_LIBRARY) $(RONDB_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
 # Use find to locate all .cc files in subdirectories
-SOURCES = $(CURDIR)/rondis.cc $(CURDIR)/common.cc $(CURDIR)/string/init.cc $(CURDIR)/string/commands.cc $(CURDIR)/string/db_interactions.cc
+SOURCES = $(CURDIR)/rondis.cc $(CURDIR)/common.cc $(CURDIR)/string/table_definitions.cc $(CURDIR)/string/commands.cc $(CURDIR)/string/db_interactions.cc
 OBJECTS = $(SOURCES:.cc=.o)
 
 # Target to build the executable "rondis"

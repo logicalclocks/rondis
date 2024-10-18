@@ -52,3 +52,9 @@ struct value_table
     Uint32 ordinal;
     char value[EXTENSION_VALUE_LEN];
 };
+
+/*
+    EXPORT
+*/
+
+int init_string_records(NdbDictionary::Dictionary *dict);
