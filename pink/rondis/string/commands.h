@@ -7,6 +7,10 @@
 
 #include "db_interactions.h"
 
+/*
+    All STRING commands: https://redis.io/docs/latest/commands/?group=string
+*/
+
 void rondb_get_command(pink::RedisCmdArgsType &argv,
                        std::string *response,
                        int fd);

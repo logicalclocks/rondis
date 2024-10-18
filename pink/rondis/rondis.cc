@@ -19,9 +19,6 @@ std::map<std::string, std::string> db;
 Ndb_cluster_connection *rondb_conn[MAX_CONNECTIONS];
 Ndb *rondb_ndb[MAX_CONNECTIONS][MAX_NDB_PER_CONNECTION];
 
-/*
-    All STRING commands: https://redis.io/docs/latest/commands/?group=string
-*/
 class RondisConn : public RedisConn
 {
 public:
