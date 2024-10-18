@@ -1,4 +1,4 @@
-CREATE TABLE redis_string_key(
+CREATE TABLE redis_string_keys(
     redis_key VARBINARY(3000) NOT NULL,
     -- We will use a ndb auto-increment
     -- This is to save space when referencing the key in the value table

@@ -32,7 +32,7 @@ int create_key_value_row(std::string *response,
 int get_simple_key_row(std::string *response,
                        const NdbDictionary::Table *tab,
                        Ndb *ndb,
-                       struct redis_main_key *row,
+                       struct key_table *row,
                        Uint32 key_len);
 
 int get_value_rows(std::string *response,
@@ -48,7 +48,7 @@ int get_complex_key_row(std::string *response,
                         const NdbDictionary::Dictionary *dict,
                         const NdbDictionary::Table *tab,
                         Ndb *ndb,
-                        struct redis_main_key *row,
+                        struct key_table *row,
                         Uint32 key_len);
 
 int rondb_get_key_id(const NdbDictionary::Table *tab,

@@ -26,13 +26,13 @@ void rondb_get_command(pink::RedisCmdArgsType &argv,
     }
     Ndb *ndb = rondb_ndb[0][0];
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
-    const NdbDictionary::Table *tab = dict->getTable("redis_main_key");
+    const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
     {
         failed_create_table(response, dict->getNdbError().code);
         return;
     }
-    struct redis_main_key row_object;
+    struct key_table row_object;
     // varbinary -> first 2 bytes are length if bigger than 255
     // start copying from 3rd byte
     memcpy(&row_object.key_val[2], key_str, key_len);
@@ -101,7 +101,7 @@ void rondb_set_command(pink::RedisCmdArgsType &argv,
         return;
     }
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
-    const NdbDictionary::Table *tab = dict->getTable("redis_main_key");
+    const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
     {
         failed_create_table(response, dict->getNdbError().code);
@@ -121,10 +121,10 @@ void rondb_set_command(pink::RedisCmdArgsType &argv,
     {
         /**
          * The row doesn't fit in one RonDB row, create more rows
-         * in the redis_key_values table.
+         * in the value_tables table.
          *
          * We also use the generated key_id which is the foreign
-         * key column in the redis_main_key table such that
+         * key column in the key_table table such that
          * deleting the row in the main table ensures that all
          * value rows are also deleted.
          */
