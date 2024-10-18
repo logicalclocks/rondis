@@ -73,34 +73,28 @@ int rondb_redis_handler(pink::RedisCmdArgsType &argv,
                         std::string *response,
                         int fd)
 {
-    if (argv.size() == 0)
+    if (argv[0] == "GET")
     {
-        return -1;
-    }
-    const char *cmd_str = argv[0].c_str();
-    unsigned int cmd_len = strlen(cmd_str);
-    if (cmd_len == 3)
-    {
-        const char *set_str = "set";
-        const char *get_str = "get";
-        if (memcmp(cmd_str, get_str, 3) == 0)
+        if (argv.size() != 2)
         {
-            rondb_get_command(argv, response, fd);
-        }
-        else if (memcmp(cmd_str, set_str, 3) == 0)
-        {
-            rondb_set_command(argv, response, fd);
-        }
-        return 0;
-    }
-    else if (cmd_len == 1)
-    {
-        const char *shutdown_str = "shutdown";
-        if (memcmp(cmd_str, shutdown_str, 8) == 0)
-        {
-            printf("Shutdown Rondis server\n");
+            printf("Invalid number of arguments for GET command\n");
             return -1;
         }
+        rondb_get_command(argv, response, fd);
     }
-    return -1;
+    else if (argv[0] == "SET")
+    {
+        if (argv.size() != 3)
+        {
+            printf("Invalid number of arguments for SET command\n");
+            return -1;
+        }
+        rondb_set_command(argv, response, fd);
+    }
+    else
+    {
+        printf("Unsupported command\n");
+        return -1;
+    }
+    return 0;
 }
