@@ -323,7 +323,7 @@ int get_value_rows(std::string *response,
         return -1;
     }
 
-    // Break up large values to avoid blocking the network for other reads
+    // Break up fetching large values to avoid blocking the network for other reads
     const int ROWS_PER_READ = 2;
     struct value_table value_rows[ROWS_PER_READ];
 
