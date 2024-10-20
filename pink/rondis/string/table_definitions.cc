@@ -31,7 +31,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
     const NdbDictionary::Column *tot_value_len_col = tab->getColumn(KEY_TABLE_COL_tot_value_len);
     const NdbDictionary::Column *num_rows_col = tab->getColumn(KEY_TABLE_COL_num_rows);
     const NdbDictionary::Column *row_state_col = tab->getColumn(KEY_TABLE_COL_row_state);
-    const NdbDictionary::Column *tot_key_len_col = tab->getColumn(KEY_TABLE_COL_tot_key_len);
+    const NdbDictionary::Column *tot_key_len_col = tab->getColumn(KEY_TABLE_COL_redis_key_len);
 
     if (redis_key_col == nullptr ||
         rondb_key_col == nullptr ||
@@ -100,7 +100,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
     all_redis_main_key_spec[6].nullbit_bit_in_byte = 0;
 
     all_redis_main_key_spec[7].column = tot_key_len_col;
-    all_redis_main_key_spec[7].offset = offsetof(struct key_table, tot_key_len);
+    all_redis_main_key_spec[7].offset = offsetof(struct key_table, redis_key_len);
     all_redis_main_key_spec[7].nullbit_byte_offset = 0;
     all_redis_main_key_spec[7].nullbit_bit_in_byte = 0;
 
