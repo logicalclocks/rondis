@@ -45,7 +45,7 @@ void rondb_get_command(pink::RedisCmdArgsType &argv,
     else
     {
         /*
-            Our valueuses value rows, so a more complex read is required.
+            Our value uses value rows, so a more complex read is required.
             We're starting from scratch here since we'll use a shared lock
             on the key table this time we read from it.
         */
@@ -63,12 +63,6 @@ void rondb_set_command(pink::RedisCmdArgsType &argv,
                        std::string *response,
                        int fd)
 {
-    printf("Kilroy came here II\n");
-    if (argv.size() < 3)
-    {
-        append_response(response, "ERR Too few arguments in SET command", 0);
-        return;
-    }
     Ndb *ndb = rondb_ndb[0][0];
     const char *key_str = argv[1].c_str();
     Uint32 key_len = argv[1].size();
