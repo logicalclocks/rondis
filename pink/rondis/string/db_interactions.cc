@@ -323,15 +323,23 @@ int get_value_rows(std::string *response,
         return -1;
     }
 
-    const int ROWS_PER_COMMIT = 2;
+    // Break up large values to avoid blocking the network for other reads
+    const int ROWS_PER_READ = 2;
+    struct value_table value_rows[ROWS_PER_READ];
 
-    struct value_table value_rows[ROWS_PER_COMMIT];
-    value_rows[0].key_id = key_id;
-    value_rows[1].key_id = key_id;
-    Uint32 row_index = 0;
-    for (Uint32 index = 0; index < num_rows; index++)
+    for (Uint32 row_index = 0; row_index < num_rows; row_index++)
     {
-        value_rows[row_index].ordinal = index;
+        int read_index = row_index % ROWS_PER_READ;
+        value_rows[read_index].key_id = key_id;
+        value_rows[read_index].ordinal = row_index;
+
+        bool is_last_row_of_read = (read_index == (ROWS_PER_READ - 1));
+        bool is_last_row = (row_index == (num_rows - 1));
+        if (!is_last_row_of_read && !is_last_row)
+        {
+            continue;
+        }
+
         const NdbOperation *read_op = trans->readTuple(
             pk_value_record,
             (const char *)&value_rows,
@@ -345,14 +353,6 @@ int get_value_rows(std::string *response,
             failed_get_operation(response);
             return RONDB_INTERNAL_ERROR;
         }
-        
-        row_index++;
-        bool is_last_row = (index == (num_rows - 1));
-        if (row_index != ROWS_PER_COMMIT && !is_last_row)
-        {
-            continue;
-        }
-        row_index = 0;
 
         NdbTransaction::ExecType commit_type = is_last_row ? NdbTransaction::Commit : NdbTransaction::NoCommit;
         if (trans->execute(commit_type,
@@ -364,7 +364,7 @@ int get_value_rows(std::string *response,
             return RONDB_INTERNAL_ERROR;
         }
 
-        for (Uint32 i = 0; i < row_index; i++)
+        for (Uint32 i = 0; i < read_index; i++)
         {
             // Transfer char pointer to response's string
             Uint32 row_value_len =
@@ -445,6 +445,7 @@ int get_complex_key_row(std::string *response,
                                   key_row->num_rows,
                                   key_row->key_id,
                                   key_row->tot_value_len);
+    ndb->closeTransaction(trans);
     if (ret_code == 0)
     {
         response->append("\r\n");
