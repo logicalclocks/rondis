@@ -25,8 +25,8 @@ extern NdbRecord *entire_key_record;
     Doing this instead of reflection; Keep these the same
     as the field names in the key_table struct.
 */
-#define KEY_TABLE_COL_key_val "key_val"
-#define KEY_TABLE_COL_key_id "key_id"
+#define KEY_TABLE_COL_redis_key "redis_key"
+#define KEY_TABLE_COL_rondb_key "rondb_key"
 #define KEY_TABLE_COL_expiry_date "expiry_date"
 #define KEY_TABLE_COL_tot_value_len "tot_value_len"
 #define KEY_TABLE_COL_num_rows "num_rows"
@@ -37,8 +37,8 @@ extern NdbRecord *entire_key_record;
 struct key_table
 {
     Uint32 null_bits; // TODO: What's this for?
-    char key_val[MAX_KEY_VALUE_LEN + 2];
-    Uint64 key_id;
+    char redis_key[MAX_KEY_VALUE_LEN + 2];
+    Uint64 rondb_key;
     Uint32 expiry_date;
     Uint32 tot_value_len;
     Uint32 num_rows;
@@ -63,13 +63,13 @@ extern NdbRecord *entire_value_record;
     Doing this instead of reflection; Keep these the same
     as the field names in the value_table struct.
 */
-#define VALUE_TABLE_COL_key_id "key_id"
+#define VALUE_TABLE_COL_rondb_key "rondb_key"
 #define VALUE_TABLE_COL_ordinal "ordinal"
 #define VALUE_TABLE_COL_value "value"
 
 struct value_table
 {
-    Uint64 key_id;
+    Uint64 rondb_key;
     Uint32 ordinal;
     char value[EXTENSION_VALUE_LEN];
 };

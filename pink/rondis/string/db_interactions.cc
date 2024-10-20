@@ -39,15 +39,15 @@ int create_key_row(std::string *response,
     memcpy(&buf[2], key_str, key_len);
     buf[0] = key_len & 255;
     buf[1] = key_len >> 8;
-    write_op->equal(KEY_TABLE_COL_key_val, buf);
+    write_op->equal(KEY_TABLE_COL_redis_key, buf);
 
     if (key_id == 0)
     {
-        write_op->setValue(KEY_TABLE_COL_key_id, (char *)NULL);
+        write_op->setValue(KEY_TABLE_COL_rondb_key, (char *)NULL);
     }
     else
     {
-        write_op->setValue(KEY_TABLE_COL_key_id, key_id);
+        write_op->setValue(KEY_TABLE_COL_rondb_key, key_id);
     }
     write_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
     write_op->setValue(KEY_TABLE_COL_num_rows, value_rows);
@@ -118,7 +118,7 @@ int create_key_row(std::string *response,
             return -1;
         }
         del_op->deleteTuple();
-        del_op->equal(KEY_TABLE_COL_key_val, buf);
+        del_op->equal(KEY_TABLE_COL_redis_key, buf);
         {
             int ret_code = del_op->getNdbError().code;
             if (ret_code != 0)
@@ -147,7 +147,7 @@ int create_key_row(std::string *response,
             return -1;
         }
         insert_op->insertTuple();
-        insert_op->equal(KEY_TABLE_COL_key_val, buf);
+        insert_op->equal(KEY_TABLE_COL_redis_key, buf);
         insert_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
         insert_op->setValue("value_rows", value_rows);
         insert_op->setValue(KEY_TABLE_COL_tot_key_len, key_len);
@@ -200,7 +200,7 @@ int create_value_row(std::string *response,
         return -1;
     }
     op->insertTuple();
-    op->equal(VALUE_TABLE_COL_key_id, key_id);
+    op->equal(VALUE_TABLE_COL_rondb_key, key_id);
     op->equal(VALUE_TABLE_COL_ordinal, ordinal);
     memcpy(&buf[2], start_value_ptr, this_value_len);
     buf[0] = this_value_len & 255;
@@ -227,7 +227,7 @@ int get_simple_key_row(std::string *response,
     // This is (usually) a local operation to calculate the correct data node, using the
     // hash of the pk value.
     NdbTransaction *trans = ndb->startTransaction(tab,
-                                                  &key_row->key_val[0],
+                                                  &key_row->redis_key[0],
                                                   key_len + 2);
     if (trans == nullptr)
     {
@@ -330,7 +330,7 @@ int get_value_rows(std::string *response,
     for (Uint32 row_index = 0; row_index < num_rows; row_index++)
     {
         int read_index = row_index % ROWS_PER_READ;
-        value_rows[read_index].key_id = key_id;
+        value_rows[read_index].rondb_key = key_id;
         value_rows[read_index].ordinal = row_index;
 
         bool is_last_row_of_read = (read_index == (ROWS_PER_READ - 1));
@@ -388,7 +388,7 @@ int get_complex_key_row(std::string *response,
      * followed by reading the value rows.
      */
     NdbTransaction *trans = ndb->startTransaction(tab,
-                                                  &key_row->key_val[0],
+                                                  &key_row->redis_key[0],
                                                   key_len + 2);
     if (trans == nullptr)
     {
@@ -443,7 +443,7 @@ int get_complex_key_row(std::string *response,
                                   dict,
                                   trans,
                                   key_row->num_rows,
-                                  key_row->key_id,
+                                  key_row->rondb_key,
                                   key_row->tot_value_len);
     ndb->closeTransaction(trans);
     if (ret_code == 0)
