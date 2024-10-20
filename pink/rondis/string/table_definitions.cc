@@ -24,14 +24,14 @@ int init_key_records(NdbDictionary::Dictionary *dict)
         printf("Failed getting table for key table of STRING\n");
         return -1;
     }
-    const NdbDictionary::Column *key_val_col = tab->getColumn("key_val");
-    const NdbDictionary::Column *key_id_col = tab->getColumn("key_id");
-    const NdbDictionary::Column *expiry_date_col = tab->getColumn("expiry_date");
-    const NdbDictionary::Column *value_col = tab->getColumn("value");
-    const NdbDictionary::Column *tot_value_len_col = tab->getColumn("tot_value_len");
-    const NdbDictionary::Column *num_rows_col = tab->getColumn("num_rows");
-    const NdbDictionary::Column *row_state_col = tab->getColumn("row_state");
-    const NdbDictionary::Column *tot_key_len_col = tab->getColumn("tot_key_len");
+    const NdbDictionary::Column *key_val_col = tab->getColumn(KEY_TABLE_COL_key_val);
+    const NdbDictionary::Column *key_id_col = tab->getColumn(KEY_TABLE_COL_key_id);
+    const NdbDictionary::Column *expiry_date_col = tab->getColumn(KEY_TABLE_COL_expiry_date);
+    const NdbDictionary::Column *value_col = tab->getColumn(KEY_TABLE_COL_value);
+    const NdbDictionary::Column *tot_value_len_col = tab->getColumn(KEY_TABLE_COL_tot_value_len);
+    const NdbDictionary::Column *num_rows_col = tab->getColumn(KEY_TABLE_COL_num_rows);
+    const NdbDictionary::Column *row_state_col = tab->getColumn(KEY_TABLE_COL_row_state);
+    const NdbDictionary::Column *tot_key_len_col = tab->getColumn(KEY_TABLE_COL_tot_key_len);
 
     if (key_val_col == nullptr ||
         key_id_col == nullptr ||
@@ -124,9 +124,9 @@ int init_value_records(NdbDictionary::Dictionary *dict)
         printf("Failed getting table for value table of STRING\n");
         return -1;
     }
-    const NdbDictionary::Column *key_id_col = tab->getColumn("key_id");
-    const NdbDictionary::Column *ordinal_col = tab->getColumn("ordinal");
-    const NdbDictionary::Column *value_col = tab->getColumn("value");
+    const NdbDictionary::Column *key_id_col = tab->getColumn(VALUE_TABLE_COL_key_id);
+    const NdbDictionary::Column *ordinal_col = tab->getColumn(VALUE_TABLE_COL_ordinal);
+    const NdbDictionary::Column *value_col = tab->getColumn(VALUE_TABLE_COL_value);
     if (key_id_col == nullptr ||
         ordinal_col == nullptr ||
         value_col == nullptr)

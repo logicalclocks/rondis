@@ -39,21 +39,21 @@ int create_key_row(std::string *response,
     memcpy(&buf[2], key_str, key_len);
     buf[0] = key_len & 255;
     buf[1] = key_len >> 8;
-    write_op->equal("key_val", buf);
+    write_op->equal(KEY_TABLE_COL_key_val, buf);
 
     if (key_id == 0)
     {
-        write_op->setValue("key_id", (char *)NULL);
+        write_op->setValue(KEY_TABLE_COL_key_id, (char *)NULL);
     }
     else
     {
-        write_op->setValue("key_id", key_id);
+        write_op->setValue(KEY_TABLE_COL_key_id, key_id);
     }
-    write_op->setValue("tot_value_len", value_len);
-    write_op->setValue("num_rows", value_rows);
-    write_op->setValue("tot_key_len", key_len);
-    write_op->setValue("row_state", row_state);
-    write_op->setValue("expiry_date", 0);
+    write_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
+    write_op->setValue(KEY_TABLE_COL_num_rows, value_rows);
+    write_op->setValue(KEY_TABLE_COL_tot_key_len, key_len);
+    write_op->setValue(KEY_TABLE_COL_row_state, row_state);
+    write_op->setValue(KEY_TABLE_COL_expiry_date, 0);
 
     if (value_len > INLINE_VALUE_LEN)
     {
@@ -62,7 +62,7 @@ int create_key_row(std::string *response,
     memcpy(&buf[2], value_str, value_len);
     buf[0] = value_len & 255;
     buf[1] = value_len >> 8;
-    write_op->setValue("value", buf);
+    write_op->setValue(KEY_TABLE_COL_value, buf);
     {
         int ret_code = write_op->getNdbError().code;
         if (ret_code != 0)
@@ -118,7 +118,7 @@ int create_key_row(std::string *response,
             return -1;
         }
         del_op->deleteTuple();
-        del_op->equal("key_val", buf);
+        del_op->equal(KEY_TABLE_COL_key_val, buf);
         {
             int ret_code = del_op->getNdbError().code;
             if (ret_code != 0)
@@ -147,12 +147,12 @@ int create_key_row(std::string *response,
             return -1;
         }
         insert_op->insertTuple();
-        insert_op->equal("key_val", buf);
-        insert_op->setValue("tot_value_len", value_len);
+        insert_op->equal(KEY_TABLE_COL_key_val, buf);
+        insert_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
         insert_op->setValue("value_rows", value_rows);
-        insert_op->setValue("tot_key_len", key_len);
-        insert_op->setValue("row_state", row_state);
-        insert_op->setValue("expiry_date", 0);
+        insert_op->setValue(KEY_TABLE_COL_tot_key_len, key_len);
+        insert_op->setValue(KEY_TABLE_COL_row_state, row_state);
+        insert_op->setValue(KEY_TABLE_COL_expiry_date, 0);
         {
             int ret_code = insert_op->getNdbError().code;
             if (ret_code != 0)
@@ -200,12 +200,12 @@ int create_value_row(std::string *response,
         return -1;
     }
     op->insertTuple();
-    op->equal("key_id", key_id);
-    op->equal("ordinal", ordinal);
+    op->equal(VALUE_TABLE_COL_key_id, key_id);
+    op->equal(VALUE_TABLE_COL_ordinal, ordinal);
     memcpy(&buf[2], start_value_ptr, this_value_len);
     buf[0] = this_value_len & 255;
     buf[1] = this_value_len >> 8;
-    op->equal("value", buf);
+    op->equal(VALUE_TABLE_COL_value, buf);
     {
         int ret_code = op->getNdbError().code;
         if (ret_code != 0)
