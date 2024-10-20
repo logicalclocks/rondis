@@ -28,10 +28,10 @@ extern NdbRecord *entire_key_record;
 #define KEY_TABLE_COL_redis_key "redis_key"
 #define KEY_TABLE_COL_rondb_key "rondb_key"
 #define KEY_TABLE_COL_expiry_date "expiry_date"
+#define KEY_TABLE_COL_tot_key_len "tot_key_len"
+#define KEY_TABLE_COL_row_state "row_state"
 #define KEY_TABLE_COL_tot_value_len "tot_value_len"
 #define KEY_TABLE_COL_num_rows "num_rows"
-#define KEY_TABLE_COL_row_state "row_state"
-#define KEY_TABLE_COL_tot_key_len "tot_key_len"
 #define KEY_TABLE_COL_value_start "value_start"
 
 struct key_table
@@ -43,10 +43,10 @@ struct key_table
     Uint32 tot_key_len;
     Uint32 expiry_date;
     Uint32 row_state;
-    char value_start[INLINE_VALUE_LEN + 2];
     Uint32 tot_value_len;
     // Technically implicit
     Uint32 num_rows;
+    char value_start[INLINE_VALUE_LEN + 2];
 };
 
 /*
