@@ -221,13 +221,13 @@ int create_value_row(std::string *response,
 int get_simple_key_row(std::string *response,
                        const NdbDictionary::Table *tab,
                        Ndb *ndb,
-                       struct key_table *row,
+                       struct key_table *key_row,
                        Uint32 key_len)
 {
     // This is (usually) a local operation to calculate the correct data node, using the
     // hash of the pk value.
     NdbTransaction *trans = ndb->startTransaction(tab,
-                                                  &row->key_val[0],
+                                                  &key_row->key_val[0],
                                                   key_len + 2);
     if (trans == nullptr)
     {
@@ -243,9 +243,9 @@ int get_simple_key_row(std::string *response,
     const unsigned char *mask_ptr = (const unsigned char *)&mask;
     const NdbOperation *read_op = trans->readTuple(
         pk_key_record,
-        (const char *)row,
+        (const char *)key_row,
         entire_key_record,
-        (char *)row,
+        (char *)key_row,
         NdbOperation::LM_CommittedRead,
         mask_ptr);
     if (read_op == nullptr)
@@ -255,51 +255,55 @@ int get_simple_key_row(std::string *response,
         return RONDB_INTERNAL_ERROR;
     }
     if (trans->execute(NdbTransaction::Commit,
-                       NdbOperation::AbortOnError) != -1 &&
-        read_op->getNdbError().code == 0)
+                       NdbOperation::AbortOnError) != 0 ||
+        read_op->getNdbError().code != 0)
     {
-        if (row->num_rows > 0)
-        {
-            return READ_VALUE_ROWS;
-        }
-        char buf[20];
-        int len = write_formatted(buf,
-                                  sizeof(buf),
-                                  "$%u\r\n",
-                                  row->tot_value_len);
-        response->reserve(row->tot_value_len + len + 3);
-        response->append(buf);
-        response->append((const char *)&row->value[2], row->tot_value_len);
-        response->append("\r\n");
-        printf("Respond with len: %d, %u tot_value_len, string: %s, string_len: %u\n", len, row->tot_value_len, response->c_str(), Uint32(response->length()));
-        ndb->closeTransaction(trans);
-        return 0;
-    }
+        /*
+            // TODO: Replace hard-coded error numbers with generic error handling
+            //     The NDB API does not supply these error codes itself so it would be guess-work
 
-    /*
-        // TODO: Replace hard-coded error numbers with generic error handling
-        //     The NDB API does not supply these error codes itself so it would be guess-work
+            NdbError::Status status = read_op->getNdbError().status;
+            if (status == NdbError::Success)
+            {
+                return 0;
+            }
+            else if (status == NdbError::PermanentError)
+            {
+                failed_no_such_row_error(response);
+                return READ_ERROR;
+            }
+        */
 
-        NdbError::Status status = read_op->getNdbError().status;
-        if (status == NdbError::Success)
-        {
-            return 0;
-        }
-        else if (status == NdbError::PermanentError)
+        int ret_code = read_op->getNdbError().code;
+        if (ret_code == READ_ERROR)
         {
             failed_no_such_row_error(response);
             return READ_ERROR;
         }
-    */
-
-    int ret_code = read_op->getNdbError().code;
-    if (ret_code == READ_ERROR)
-    {
-        failed_no_such_row_error(response);
-        return READ_ERROR;
+        failed_read_error(response, ret_code);
+        return RONDB_INTERNAL_ERROR;
     }
-    failed_read_error(response, ret_code);
-    return RONDB_INTERNAL_ERROR;
+
+    if (key_row->num_rows > 0)
+    {
+        return 0;
+    }
+    char buf[20];
+    int len = write_formatted(buf,
+                              sizeof(buf),
+                              "$%u\r\n",
+                              key_row->tot_value_len);
+    response->reserve(key_row->tot_value_len + len + 3);
+    response->append(buf);
+    response->append((const char *)&key_row->value[2], key_row->tot_value_len);
+    response->append("\r\n");
+    printf("Respond with len: %d, %u tot_value_len, string: %s, string_len: %u\n",
+           len,
+           key_row->tot_value_len,
+           response->c_str(),
+           Uint32(response->length()));
+    ndb->closeTransaction(trans);
+    return 0;
 }
 
 int get_value_rows(std::string *response,
@@ -318,7 +322,10 @@ int get_value_rows(std::string *response,
         response->clear();
         return -1;
     }
-    struct value_table value_rows[2];
+
+    const int ROWS_PER_COMMIT = 2;
+
+    struct value_table value_rows[ROWS_PER_COMMIT];
     value_rows[0].key_id = key_id;
     value_rows[1].key_id = key_id;
     Uint32 row_index = 0;
@@ -339,7 +346,7 @@ int get_value_rows(std::string *response,
             return RONDB_INTERNAL_ERROR;
         }
         row_index++;
-        if (row_index == 2 || index == (num_rows - 1))
+        if (row_index == ROWS_PER_COMMIT || index == (num_rows - 1))
         {
             row_index = 0;
             NdbTransaction::ExecType commit_type = NdbTransaction::NoCommit;
@@ -352,6 +359,7 @@ int get_value_rows(std::string *response,
             {
                 for (Uint32 i = 0; i < row_index; i++)
                 {
+                    // Transfer char pointer to response's string
                     Uint32 row_value_len =
                         value_rows[i].value[0] + (value_rows[i].value[1] << 8);
                     response->append(&value_rows[i].value[2], row_value_len);
@@ -400,7 +408,7 @@ int get_complex_key_row(std::string *response,
         (const char *)key_row,
         entire_key_record,
         (char *)key_row,
-        NdbOperation::LM_Read,  // Shared lock so that reads from value table later are consistent
+        NdbOperation::LM_Read, // Shared lock so that reads from value table later are consistent
         mask_ptr);
     if (read_op == nullptr)
     {
@@ -430,7 +438,7 @@ int get_complex_key_row(std::string *response,
     // Append inline value to response
     Uint32 inline_value_len = key_row->value[0] + (key_row->value[1] << 8);
     response->append((const char *)&key_row->value[2], inline_value_len);
-    
+
     int ret_code = get_value_rows(response,
                                   ndb,
                                   dict,
