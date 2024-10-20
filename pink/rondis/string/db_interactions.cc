@@ -345,28 +345,31 @@ int get_value_rows(std::string *response,
             failed_get_operation(response);
             return RONDB_INTERNAL_ERROR;
         }
+        
         row_index++;
         bool is_last_row = (index == (num_rows - 1));
-        if (row_index == ROWS_PER_COMMIT || is_last_row)
+        if (row_index != ROWS_PER_COMMIT && !is_last_row)
         {
-            row_index = 0;
+            continue;
+        }
+        row_index = 0;
 
-            NdbTransaction::ExecType commit_type = is_last_row ? NdbTransaction::Commit : NdbTransaction::NoCommit;
-            if (trans->execute(commit_type,
-                               NdbOperation::AbortOnError) != 0)
-            {
-                response->clear();
-                failed_read_error(response, trans->getNdbError().code);
-                return RONDB_INTERNAL_ERROR;
-            }
+        NdbTransaction::ExecType commit_type = is_last_row ? NdbTransaction::Commit : NdbTransaction::NoCommit;
+        if (trans->execute(commit_type,
+                           NdbOperation::AbortOnError) != 0)
+        {
+            response->clear();
+            failed_read_error(response, trans->getNdbError().code);
+            ndb->closeTransaction(trans);
+            return RONDB_INTERNAL_ERROR;
+        }
 
-            for (Uint32 i = 0; i < row_index; i++)
-            {
-                // Transfer char pointer to response's string
-                Uint32 row_value_len =
-                    value_rows[i].value[0] + (value_rows[i].value[1] << 8);
-                response->append(&value_rows[i].value[2], row_value_len);
-            }
+        for (Uint32 i = 0; i < row_index; i++)
+        {
+            // Transfer char pointer to response's string
+            Uint32 row_value_len =
+                value_rows[i].value[0] + (value_rows[i].value[1] << 8);
+            response->append(&value_rows[i].value[2], row_value_len);
         }
     }
     return 0;
