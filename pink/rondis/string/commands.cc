@@ -13,10 +13,6 @@ void rondb_get_command(pink::RedisCmdArgsType &argv,
                        std::string *response,
                        int fd)
 {
-    if (argv.size() < 2)
-    {
-        return;
-    }
     const char *key_str = argv[1].c_str();
     Uint32 key_len = argv[1].size();
     if (key_len > MAX_KEY_VALUE_LEN)
@@ -24,6 +20,7 @@ void rondb_get_command(pink::RedisCmdArgsType &argv,
         failed_large_key(response);
         return;
     }
+
     Ndb *ndb = rondb_ndb[0][0];
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
@@ -32,52 +29,34 @@ void rondb_get_command(pink::RedisCmdArgsType &argv,
         failed_create_table(response, dict->getNdbError().code);
         return;
     }
-    struct key_table row_object;
+
+    struct key_table key_row;
     // varbinary -> first 2 bytes are length if bigger than 255
     // start copying from 3rd byte
-    memcpy(&row_object.key_val[2], key_str, key_len);
+    memcpy(&key_row.key_val[2], key_str, key_len);
     // Length as little endian
-    row_object.key_val[0] = key_len & 255;
-    row_object.key_val[1] = key_len >> 8;
+    key_row.key_val[0] = key_len & 255;
+    key_row.key_val[1] = key_len >> 8;
+    int ret_code = get_simple_key_row(response, tab, ndb, &key_row, key_len);
+    if ((ret_code != 0) || (&key_row)->num_rows == 0)
     {
-        int ret_code = get_simple_key_row(response,
-                                          tab,
-                                          ndb,
-                                          &row_object,
-                                          key_len);
-        if (ret_code == 0)
-        {
-            /* Row found and read, return result */
-            return;
-        }
-        else if (ret_code == READ_ERROR)
-        {
-            /* Row not found, return error */
-            return;
-        }
-        else if (ret_code == READ_VALUE_ROWS)
-        {
-            /* Row uses value rows, so more complex read is required */
-            ret_code = get_complex_key_row(response,
-                                           dict,
-                                           tab,
-                                           ndb,
-                                           &row_object,
-                                           key_len);
-            if (ret_code == 0)
-            {
-                /* Rows found and read, return result */
-                return;
-            }
-            else if (ret_code == READ_ERROR)
-            {
-                /* Row not found, return error */
-                return;
-            }
-        }
+        return;
     }
-    /* Some RonDB occurred, already created response */
-    return;
+    else
+    {
+        /*
+            Our valueuses value rows, so a more complex read is required.
+            We're starting from scratch here since we'll use a shared lock
+            on the key table this time we read from it.
+        */
+        get_complex_key_row(response,
+                            dict,
+                            tab,
+                            ndb,
+                            &key_row,
+                            key_len);
+        return;
+    }
 }
 
 void rondb_set_command(pink::RedisCmdArgsType &argv,
@@ -143,14 +122,14 @@ void rondb_set_command(pink::RedisCmdArgsType &argv,
                 this_value_len = EXTENSION_VALUE_LEN;
             }
             int ret_code = create_value_row(response,
-                                                ndb,
-                                                dict,
-                                                trans,
-                                                start_value_ptr,
-                                                key_id,
-                                                this_value_len,
-                                                value_rows,
-                                                &varsize_param[0]);
+                                            ndb,
+                                            dict,
+                                            trans,
+                                            start_value_ptr,
+                                            key_id,
+                                            this_value_len,
+                                            value_rows,
+                                            &varsize_param[0]);
             if (ret_code == -1)
             {
                 return;
