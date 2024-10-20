@@ -355,21 +355,19 @@ int get_value_rows(std::string *response,
                 commit_type = NdbTransaction::Commit;
             }
             if (trans->execute(commit_type,
-                               NdbOperation::AbortOnError) != -1)
-            {
-                for (Uint32 i = 0; i < row_index; i++)
-                {
-                    // Transfer char pointer to response's string
-                    Uint32 row_value_len =
-                        value_rows[i].value[0] + (value_rows[i].value[1] << 8);
-                    response->append(&value_rows[i].value[2], row_value_len);
-                }
-            }
-            else
+                               NdbOperation::AbortOnError) != 0)
             {
                 response->clear();
                 failed_read_error(response, trans->getNdbError().code);
                 return RONDB_INTERNAL_ERROR;
+            }
+            
+            for (Uint32 i = 0; i < row_index; i++)
+            {
+                // Transfer char pointer to response's string
+                Uint32 row_value_len =
+                    value_rows[i].value[0] + (value_rows[i].value[1] << 8);
+                response->append(&value_rows[i].value[2], row_value_len);
             }
         }
     }
