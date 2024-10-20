@@ -62,7 +62,7 @@ int create_key_row(std::string *response,
     memcpy(&buf[2], value_str, value_len);
     buf[0] = value_len & 255;
     buf[1] = value_len >> 8;
-    write_op->setValue(KEY_TABLE_COL_value, buf);
+    write_op->setValue(KEY_TABLE_COL_value_start, buf);
     {
         int ret_code = write_op->getNdbError().code;
         if (ret_code != 0)
@@ -295,7 +295,7 @@ int get_simple_key_row(std::string *response,
                               key_row->tot_value_len);
     response->reserve(key_row->tot_value_len + len + 3);
     response->append(buf);
-    response->append((const char *)&key_row->value[2], key_row->tot_value_len);
+    response->append((const char *)&key_row->value_start[2], key_row->tot_value_len);
     response->append("\r\n");
     printf("Respond with len: %d, %u tot_value_len, string: %s, string_len: %u\n",
            len,
@@ -435,8 +435,8 @@ int get_complex_key_row(std::string *response,
     response->append(buf);
 
     // Append inline value to response
-    Uint32 inline_value_len = key_row->value[0] + (key_row->value[1] << 8);
-    response->append((const char *)&key_row->value[2], inline_value_len);
+    Uint32 inline_value_len = key_row->value_start[0] + (key_row->value_start[1] << 8);
+    response->append((const char *)&key_row->value_start[2], inline_value_len);
 
     int ret_code = get_value_rows(response,
                                   ndb,
