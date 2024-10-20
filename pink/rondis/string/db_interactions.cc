@@ -373,7 +373,7 @@ int get_complex_key_row(std::string *response,
                         const NdbDictionary::Dictionary *dict,
                         const NdbDictionary::Table *tab,
                         Ndb *ndb,
-                        struct key_table *row,
+                        struct key_table *key_row,
                         Uint32 key_len)
 {
     /**
@@ -382,7 +382,7 @@ int get_complex_key_row(std::string *response,
      * followed by reading the value rows.
      */
     NdbTransaction *trans = ndb->startTransaction(tab,
-                                                  &row->key_val[0],
+                                                  &key_row->key_val[0],
                                                   key_len + 2);
     if (trans == nullptr)
     {
@@ -398,10 +398,10 @@ int get_complex_key_row(std::string *response,
     const unsigned char *mask_ptr = (const unsigned char *)&mask;
     const NdbOperation *read_op = trans->readTuple(
         pk_key_record,
-        (const char *)row,
+        (const char *)key_row,
         entire_key_record,
-        (char *)row,
-        NdbOperation::LM_Read,
+        (char *)key_row,
+        NdbOperation::LM_Read,  // Shared lock so that reads from value table later are consistent
         mask_ptr);
     if (read_op == nullptr)
     {
@@ -409,7 +409,6 @@ int get_complex_key_row(std::string *response,
         failed_get_operation(response);
         return RONDB_INTERNAL_ERROR;
     }
-    
     if (trans->execute(NdbTransaction::NoCommit,
                        NdbOperation::AbortOnError) != 0)
     {
@@ -418,24 +417,29 @@ int get_complex_key_row(std::string *response,
         return RONDB_INTERNAL_ERROR;
     }
 
+    // Got inline value, now getting the other value rows
+
+    // Preparing response based on returned total value length
     char buf[20];
     int len = write_formatted(buf,
                               sizeof(buf),
                               "$%u\r\n",
-                              row->tot_value_len);
-
-    response->reserve(row->tot_value_len + len + 3);
+                              key_row->tot_value_len);
+    response->reserve(key_row->tot_value_len + len + 3);
     response->append(buf);
-    Uint32 this_value_len = row->value[0] + (row->value[1] << 8);
-    response->append((const char *)&row->value[2], this_value_len);
+
+    // Append inline value to response
+    Uint32 inline_value_len = key_row->value[0] + (key_row->value[1] << 8);
+    response->append((const char *)&key_row->value[2], inline_value_len);
+    
     int ret_code = get_value_rows(response,
                                   ndb,
                                   dict,
                                   trans,
-                                  row->num_rows,
-                                  row->key_id,
-                                  this_value_len,
-                                  row->tot_value_len);
+                                  key_row->num_rows,
+                                  key_row->key_id,
+                                  inline_value_len,
+                                  key_row->tot_value_len);
     if (ret_code == 0)
     {
         response->append("\r\n");
