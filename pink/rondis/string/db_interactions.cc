@@ -346,14 +346,12 @@ int get_value_rows(std::string *response,
             return RONDB_INTERNAL_ERROR;
         }
         row_index++;
-        if (row_index == ROWS_PER_COMMIT || index == (num_rows - 1))
+        bool is_last_row = (index == (num_rows - 1));
+        if (row_index == ROWS_PER_COMMIT || is_last_row)
         {
             row_index = 0;
-            NdbTransaction::ExecType commit_type = NdbTransaction::NoCommit;
-            if (index == (num_rows - 1))
-            {
-                commit_type = NdbTransaction::Commit;
-            }
+
+            NdbTransaction::ExecType commit_type = is_last_row ? NdbTransaction::Commit : NdbTransaction::NoCommit;
             if (trans->execute(commit_type,
                                NdbOperation::AbortOnError) != 0)
             {
@@ -361,7 +359,7 @@ int get_value_rows(std::string *response,
                 failed_read_error(response, trans->getNdbError().code);
                 return RONDB_INTERNAL_ERROR;
             }
-            
+
             for (Uint32 i = 0; i < row_index; i++)
             {
                 // Transfer char pointer to response's string
