@@ -185,7 +185,7 @@ int create_value_row(std::string *response,
                      Uint32 ordinal,
                      char *buf)
 {
-    const NdbDictionary::Table *tab = dict->getTable("redis_key_values");
+    const NdbDictionary::Table *tab = dict->getTable(VALUE_TABLE_NAME);
     if (tab == nullptr)
     {
         failed_create_table(response, ndb->getNdbError().code);
@@ -308,10 +308,9 @@ int get_value_rows(std::string *response,
                    NdbTransaction *trans,
                    const Uint32 num_rows,
                    const Uint64 key_id,
-                   const Uint32 this_value_len,
                    const Uint32 tot_value_len)
 {
-    const NdbDictionary::Table *tab = dict->getTable("redis_key_values");
+    const NdbDictionary::Table *tab = dict->getTable(VALUE_TABLE_NAME);
     if (tab == nullptr)
     {
         failed_create_table(response, ndb->getNdbError().code);
@@ -319,18 +318,18 @@ int get_value_rows(std::string *response,
         response->clear();
         return -1;
     }
-    struct value_table row[2];
-    row[0].key_id = key_id;
-    row[1].key_id = key_id;
+    struct value_table value_rows[2];
+    value_rows[0].key_id = key_id;
+    value_rows[1].key_id = key_id;
     Uint32 row_index = 0;
     for (Uint32 index = 0; index < num_rows; index++)
     {
-        row[row_index].ordinal = index;
+        value_rows[row_index].ordinal = index;
         const NdbOperation *read_op = trans->readTuple(
             pk_value_record,
-            (const char *)&row,
+            (const char *)&value_rows,
             entire_value_record,
-            (char *)&row,
+            (char *)&value_rows,
             NdbOperation::LM_CommittedRead);
         if (read_op == nullptr)
         {
@@ -353,9 +352,9 @@ int get_value_rows(std::string *response,
             {
                 for (Uint32 i = 0; i < row_index; i++)
                 {
-                    Uint32 this_value_len =
-                        row[i].value[0] + (row[i].value[1] << 8);
-                    response->append(&row[i].value[2], this_value_len);
+                    Uint32 row_value_len =
+                        value_rows[i].value[0] + (value_rows[i].value[1] << 8);
+                    response->append(&value_rows[i].value[2], row_value_len);
                 }
             }
             else
@@ -438,7 +437,6 @@ int get_complex_key_row(std::string *response,
                                   trans,
                                   key_row->num_rows,
                                   key_row->key_id,
-                                  inline_value_len,
                                   key_row->tot_value_len);
     if (ret_code == 0)
     {

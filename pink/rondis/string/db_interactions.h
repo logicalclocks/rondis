@@ -52,7 +52,6 @@ int get_value_rows(std::string *response,
                    NdbTransaction *trans,
                    const Uint32 num_rows,
                    const Uint64 key_id,
-                   const Uint32 this_value_len,
                    const Uint32 tot_value_len);
 
 int rondb_get_key_id(const NdbDictionary::Table *tab,
