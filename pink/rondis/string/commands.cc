@@ -33,10 +33,10 @@ void rondb_get_command(pink::RedisCmdArgsType &argv,
     struct key_table key_row;
     // varbinary -> first 2 bytes are length if bigger than 255
     // start copying from 3rd byte
-    memcpy(&key_row.key_val[2], key_str, key_len);
+    memcpy(&key_row.redis_key[2], key_str, key_len);
     // Length as little endian
-    key_row.key_val[0] = key_len & 255;
-    key_row.key_val[1] = key_len >> 8;
+    key_row.redis_key[0] = key_len & 255;
+    key_row.redis_key[1] = key_len >> 8;
     int ret_code = get_simple_key_row(response, tab, ndb, &key_row, key_len);
     if ((ret_code != 0) || (&key_row)->num_rows == 0)
     {
