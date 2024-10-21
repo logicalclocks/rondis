@@ -9,7 +9,7 @@
 #include "../common.h"
 #include "table_definitions.h"
 
-void rondb_get_command(pink::RedisCmdArgsType &argv,
+void rondb_get_command(const pink::RedisCmdArgsType &argv,
                        std::string *response,
                        int fd)
 {
@@ -59,7 +59,7 @@ void rondb_get_command(pink::RedisCmdArgsType &argv,
     }
 }
 
-void rondb_set_command(pink::RedisCmdArgsType &argv,
+void rondb_set_command(const pink::RedisCmdArgsType &argv,
                        std::string *response,
                        int fd)
 {

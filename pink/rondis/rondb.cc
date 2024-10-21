@@ -69,7 +69,7 @@ void rondb_end()
     ndb_end(0);
 }
 
-int rondb_redis_handler(pink::RedisCmdArgsType &argv,
+int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                         std::string *response,
                         int fd)
 {

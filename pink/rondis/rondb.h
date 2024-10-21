@@ -7,6 +7,6 @@ int setup_rondb(const char *connect_string);
 
 void rondb_end();
 
-int rondb_redis_handler(pink::RedisCmdArgsType &argv,
+int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                         std::string *response,
                         int fd);
