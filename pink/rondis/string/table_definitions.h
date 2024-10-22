@@ -12,7 +12,7 @@
     KEY TABLE
 */
 
-#define KEY_TABLE_NAME "redis_string_keys"
+#define KEY_TABLE_NAME "string_keys"
 #define MAX_KEY_VALUE_LEN 3000
 #define INLINE_VALUE_LEN 26500
 
@@ -49,7 +49,7 @@ struct key_table
     VALUE TABLE
 */
 
-#define VALUE_TABLE_NAME "redis_string_values"
+#define VALUE_TABLE_NAME "string_values"
 #define EXTENSION_VALUE_LEN 29500
 
 int init_value_records(NdbDictionary::Dictionary *dict);
