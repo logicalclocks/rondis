@@ -4,6 +4,7 @@
 #include "pink/include/pink_conn.h"
 #include "pink/include/redis_conn.h"
 #include "pink/include/pink_thread.h"
+#include "pink/src/holy_thread.h"
 #include "rondb.h"
 
 using namespace pink;
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 
     ConnFactory *conn_factory = new RondisConnFactory();
 
-    ServerThread *my_thread = NewHolyThread(port, conn_factory, 1000);
+    ServerThread *my_thread = new HolyThread(port, conn_factory, 1000, NULL, false);
     if (my_thread->StartThread() != 0)
     {
         printf("StartThread error happened!\n");
