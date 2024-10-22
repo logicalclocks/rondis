@@ -29,7 +29,7 @@ int initialize_connections(const char *connect_string)
         printf("RonDB data node connection nr. %d is ready\n", i);
         for (unsigned int j = 0; j < MAX_NDB_PER_CONNECTION; j++)
         {
-            Ndb *ndb = new Ndb(rondb_conn[i], "redis_0");
+            Ndb *ndb = new Ndb(rondb_conn[i], REDIS_DB_NAME);
             if (ndb == nullptr)
             {
                 printf("Failed creating Ndb object nr. %d for cluster connection %d\n", j, i);
