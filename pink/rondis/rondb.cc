@@ -80,7 +80,16 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                         std::string *response,
                         int fd)
 {
-    if (argv[0] == "GET")
+    if (argv[0] == "ping")
+    {
+        if (argv.size() != 1)
+        {
+            printf("Invalid number of arguments for ping command\n");
+            return -1;
+        }
+        response->append("+PONG\r\n");
+    }
+    else if (argv[0] == "GET")
     {
         if (argv.size() != 2)
         {
