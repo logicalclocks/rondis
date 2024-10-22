@@ -14,11 +14,11 @@ CREATE TABLE redis.string_keys(
     -- Technically implicit
     num_rows INT UNSIGNED NOT NULL,
     value_start VARBINARY(26500) NOT NULL,
-    -- Redis supports get/set of seconds/miliseconds
+    -- Redis supports get/set of seconds/milliseconds
     expiry_date INT UNSIGNED,
     -- Easier to sort and delete keys this way
     KEY expiry_index(expiry_date),
     PRIMARY KEY (redis_key) USING HASH,
-    UNIQUE KEY (rondb_key) USING HASH,
+    UNIQUE KEY (rondb_key) USING HASH
 ) ENGINE NDB -- Each CHAR will use 1 byte
-CHARSET = latin1 COMMENT = "NDB_TABLE=PARTITION_BALANCE=FOR_RP_BY_LDM_X_8"
+CHARSET = latin1 COMMENT = "NDB_TABLE=PARTITION_BALANCE=FOR_RP_BY_LDM_X_8";
