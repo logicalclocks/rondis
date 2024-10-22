@@ -48,8 +48,10 @@ int init_key_records(NdbDictionary::Dictionary *dict)
     }
 
     printf("Getting records for table %s\n", KEY_TABLE_NAME);
-    NdbDictionary::RecordSpecification pk_lookup_specs[1];
-    NdbDictionary::RecordSpecification read_all_cols_specs[7];
+    const int NUM_COLS_PK_LOOKUP = 1;
+    NdbDictionary::RecordSpecification pk_lookup_specs[NUM_COLS_PK_LOOKUP];
+    const int NUM_COLS_READ_ALL_COLS = 7;
+    NdbDictionary::RecordSpecification read_all_cols_specs[NUM_COLS_READ_ALL_COLS];
 
     pk_lookup_specs[0].column = redis_key_col;
     pk_lookup_specs[0].offset = offsetof(struct key_table, redis_key);
@@ -58,7 +60,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
     pk_key_record =
         dict->createRecord(tab,
                            pk_lookup_specs,
-                           1,
+                           NUM_COLS_PK_LOOKUP,
                            sizeof(pk_lookup_specs[0]));
     if (pk_key_record == nullptr)
     {
@@ -103,7 +105,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
 
     entire_key_record = dict->createRecord(tab,
                                            read_all_cols_specs,
-                                           8,
+                                           NUM_COLS_READ_ALL_COLS,
                                            sizeof(read_all_cols_specs[0]));
     if (entire_key_record == nullptr)
     {
@@ -136,8 +138,10 @@ int init_value_records(NdbDictionary::Dictionary *dict)
     }
 
     printf("Getting records for table %s\n", VALUE_TABLE_NAME);
-    NdbDictionary::RecordSpecification pk_lookup_specs[2];
-    NdbDictionary::RecordSpecification read_all_cols_specs[3];
+    const int NUM_COLS_PK_LOOKUP = 2;
+    NdbDictionary::RecordSpecification pk_lookup_specs[NUM_COLS_PK_LOOKUP];
+    const int NUM_COLS_READ_ALL_COLS = 3;
+    NdbDictionary::RecordSpecification read_all_cols_specs[NUM_COLS_READ_ALL_COLS];
 
     pk_lookup_specs[0].column = rondb_key_col;
     pk_lookup_specs[0].offset = offsetof(struct value_table, rondb_key);
@@ -151,7 +155,7 @@ int init_value_records(NdbDictionary::Dictionary *dict)
 
     pk_value_record = dict->createRecord(tab,
                                          pk_lookup_specs,
-                                         2,
+                                         NUM_COLS_PK_LOOKUP,
                                          sizeof(pk_lookup_specs[0]));
     if (pk_value_record == nullptr)
     {
@@ -176,7 +180,7 @@ int init_value_records(NdbDictionary::Dictionary *dict)
 
     entire_value_record = dict->createRecord(tab,
                                              read_all_cols_specs,
-                                             3,
+                                             NUM_COLS_READ_ALL_COLS,
                                              sizeof(read_all_cols_specs[0]));
     if (entire_value_record == nullptr)
     {
