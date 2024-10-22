@@ -53,11 +53,10 @@ int init_key_records(NdbDictionary::Dictionary *dict)
     pk_lookup_specs[0].offset = offsetof(struct key_table, redis_key);
     pk_lookup_specs[0].nullbit_byte_offset = 0;
     pk_lookup_specs[0].nullbit_bit_in_byte = 0;
-    pk_key_record =
-        dict->createRecord(tab,
-                           pk_lookup_specs,
-                           NUM_COLS_PK_LOOKUP,
-                           sizeof(pk_lookup_specs[0]));
+    pk_key_record = dict->createRecord(tab,
+                                       pk_lookup_specs,
+                                       NUM_COLS_PK_LOOKUP,
+                                       sizeof(pk_lookup_specs[0]));
     if (pk_key_record == nullptr)
     {
         printf("Failed creating pk-lookup record for table %s\n", KEY_TABLE_NAME);
