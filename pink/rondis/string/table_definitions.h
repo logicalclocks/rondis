@@ -73,7 +73,12 @@ struct value_table
 };
 
 /*
-    EXPORT
+    SHARED/EXPORT
 */
+
+int init_record(NdbDictionary::Dictionary *dict,
+                const NdbDictionary::Table *tab,
+                std::map<const NdbDictionary::Column *, std::pair<size_t, int>> column_info_map,
+                NdbRecord *&record);
 
 int init_string_records(NdbDictionary::Dictionary *dict);
