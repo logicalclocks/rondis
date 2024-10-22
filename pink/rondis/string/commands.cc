@@ -87,7 +87,6 @@ void rondb_set_command(const pink::RedisCmdArgsType &argv,
         return;
     }
 
-    printf("Kilroy came here III\n");
     NdbTransaction *trans = ndb->startTransaction(tab, key_str, key_len);
     if (trans == nullptr)
     {

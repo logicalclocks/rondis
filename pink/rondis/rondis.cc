@@ -33,7 +33,7 @@ RondisConn::RondisConn(int fd, const std::string &ip_port,
 
 int RondisConn::DealMessage(const RedisCmdArgsType &argv, std::string *response)
 {
-    printf("Get redis message ");
+    printf("Received Redis message: ");
     for (int i = 0; i < argv.size(); i++)
     {
         printf("%s ", argv[i].c_str());
