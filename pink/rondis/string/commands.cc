@@ -63,7 +63,6 @@ void rondb_set_command(const pink::RedisCmdArgsType &argv,
                        std::string *response,
                        int fd)
 {
-    Ndb *ndb = rondb_ndb[0][0];
     const char *key_str = argv[1].c_str();
     Uint32 key_len = argv[1].size();
     const char *value_str = argv[2].c_str();
@@ -73,13 +72,23 @@ void rondb_set_command(const pink::RedisCmdArgsType &argv,
         failed_large_key(response);
         return;
     }
+
+    Ndb *ndb = rondb_ndb[0][0];
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
+    if (dict == nullptr)
+    {
+        append_response(response,
+                        "RonDB Error: Failed to get Ndb dictionary:",
+                        dict->getNdbError().code);
+        return;
+    }
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
     {
         failed_create_table(response, dict->getNdbError().code);
         return;
     }
+
     printf("Kilroy came here III\n");
     NdbTransaction *trans = ndb->startTransaction(tab, key_str, key_len);
     if (trans == nullptr)
