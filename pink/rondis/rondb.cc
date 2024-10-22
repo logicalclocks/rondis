@@ -61,7 +61,14 @@ int setup_rondb(const char *connect_string)
     Ndb *ndb = rondb_ndb[0][0];
     NdbDictionary::Dictionary *dict = ndb->getDictionary();
 
-    return init_string_records(dict);
+    if (init_string_records(dict) != 0)
+    {
+        printf("Failed initializing records for Redis data type STRING; error: %s\n",
+               ndb->getNdbError().message);
+        return -1;
+    }
+
+    return 0;
 }
 
 void rondb_end()
