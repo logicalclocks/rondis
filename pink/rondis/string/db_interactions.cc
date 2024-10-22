@@ -23,7 +23,7 @@ int create_key_row(std::string *response,
                    const char *value_str,
                    Uint32 value_len,
                    Uint32 field_rows,
-                   Uint32 value_rows,
+                   Uint32 num_value_rows,
                    Uint32 row_state,
                    char *buf)
 {
@@ -50,7 +50,7 @@ int create_key_row(std::string *response,
         write_op->setValue(KEY_TABLE_COL_rondb_key, key_id);
     }
     write_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
-    write_op->setValue(KEY_TABLE_COL_num_rows, value_rows);
+    write_op->setValue(KEY_TABLE_COL_num_rows, num_value_rows);
     write_op->setValue(KEY_TABLE_COL_value_data_type, row_state);
     write_op->setValue(KEY_TABLE_COL_expiry_date, 0);
 
@@ -73,7 +73,7 @@ int create_key_row(std::string *response,
     }
     {
         int ret_code = 0;
-        if (((value_rows == 0) &&
+        if (((num_value_rows == 0) &&
              (execute_commit(ndb, trans, ret_code) == 0)) ||
             (execute_no_commit(trans, ret_code, true) == 0))
         {
@@ -98,7 +98,7 @@ int create_key_row(std::string *response,
      * After deleting the key row we are now ready to insert the
      * key row.
      */
-    if (value_rows == 0)
+    if (num_value_rows == 0)
     {
         ndb->closeTransaction(trans);
         ndb->startTransaction(tab, key_str, key_len);
@@ -148,7 +148,7 @@ int create_key_row(std::string *response,
         insert_op->insertTuple();
         insert_op->equal(KEY_TABLE_COL_redis_key, buf);
         insert_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
-        insert_op->setValue("value_rows", value_rows);
+        insert_op->setValue(KEY_TABLE_COL_num_rows, num_value_rows);
         insert_op->setValue(KEY_TABLE_COL_value_data_type, row_state);
         insert_op->setValue(KEY_TABLE_COL_expiry_date, 0);
         {
