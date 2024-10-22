@@ -1,4 +1,4 @@
-CREATE TABLE redis_string_values(
+CREATE TABLE redis.string_values(
     rondb_key BIGINT UNSIGNED NOT NULL,
     ordinal INT UNSIGNED NOT NULL,
     value VARBINARY(29500) NOT NULL,

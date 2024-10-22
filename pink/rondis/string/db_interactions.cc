@@ -51,7 +51,7 @@ int create_key_row(std::string *response,
     }
     write_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
     write_op->setValue(KEY_TABLE_COL_num_rows, value_rows);
-    write_op->setValue(KEY_TABLE_COL_row_state, row_state);
+    write_op->setValue(KEY_TABLE_COL_value_data_type, row_state);
     write_op->setValue(KEY_TABLE_COL_expiry_date, 0);
 
     if (value_len > INLINE_VALUE_LEN)
@@ -149,7 +149,7 @@ int create_key_row(std::string *response,
         insert_op->equal(KEY_TABLE_COL_redis_key, buf);
         insert_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
         insert_op->setValue("value_rows", value_rows);
-        insert_op->setValue(KEY_TABLE_COL_row_state, row_state);
+        insert_op->setValue(KEY_TABLE_COL_value_data_type, row_state);
         insert_op->setValue(KEY_TABLE_COL_expiry_date, 0);
         {
             int ret_code = insert_op->getNdbError().code;

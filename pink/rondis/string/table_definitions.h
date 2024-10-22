@@ -28,18 +28,17 @@ extern NdbRecord *entire_key_record;
 #define KEY_TABLE_COL_redis_key "redis_key"
 #define KEY_TABLE_COL_rondb_key "rondb_key"
 #define KEY_TABLE_COL_expiry_date "expiry_date"
-#define KEY_TABLE_COL_row_state "row_state"
+#define KEY_TABLE_COL_value_data_type "value_data_type"
 #define KEY_TABLE_COL_tot_value_len "tot_value_len"
 #define KEY_TABLE_COL_num_rows "num_rows"
 #define KEY_TABLE_COL_value_start "value_start"
 
 struct key_table
 {
-    Uint32 null_bits; // TODO: What's this for?
     char redis_key[MAX_KEY_VALUE_LEN + 2];
     Uint64 rondb_key;
     Uint32 expiry_date;
-    Uint32 row_state;
+    Uint32 value_data_type;
     Uint32 tot_value_len;
     // Technically implicit
     Uint32 num_rows;
