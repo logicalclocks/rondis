@@ -115,12 +115,15 @@ int init_key_records(NdbDictionary::Dictionary *dict)
 
 int init_value_records(NdbDictionary::Dictionary *dict)
 {
+    printf("Getting table %s\n", VALUE_TABLE_NAME);
     const NdbDictionary::Table *tab = dict->getTable("redis_key_value");
     if (tab == nullptr)
     {
         printf("Failed getting table for table %s\n", VALUE_TABLE_NAME);
         return -1;
     }
+
+    printf("Getting columns for table %s\n", VALUE_TABLE_NAME);
     const NdbDictionary::Column *rondb_key_col = tab->getColumn(VALUE_TABLE_COL_rondb_key);
     const NdbDictionary::Column *ordinal_col = tab->getColumn(VALUE_TABLE_COL_ordinal);
     const NdbDictionary::Column *value_col = tab->getColumn(VALUE_TABLE_COL_value);
@@ -132,6 +135,7 @@ int init_value_records(NdbDictionary::Dictionary *dict)
         return -1;
     }
 
+    printf("Getting records for table %s\n", VALUE_TABLE_NAME);
     NdbDictionary::RecordSpecification pk_lookup_specs[2];
     NdbDictionary::RecordSpecification read_all_cols_specs[3];
 
