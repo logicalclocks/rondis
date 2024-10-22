@@ -31,7 +31,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
     const NdbDictionary::Column *value_start_col = tab->getColumn(KEY_TABLE_COL_value_start);
     const NdbDictionary::Column *tot_value_len_col = tab->getColumn(KEY_TABLE_COL_tot_value_len);
     const NdbDictionary::Column *num_rows_col = tab->getColumn(KEY_TABLE_COL_num_rows);
-    const NdbDictionary::Column *row_state_col = tab->getColumn(KEY_TABLE_COL_value_data_type);
+    const NdbDictionary::Column *value_data_type_col = tab->getColumn(KEY_TABLE_COL_value_data_type);
 
     if (redis_key_col == nullptr ||
         rondb_key_col == nullptr ||
@@ -39,7 +39,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
         value_start_col == nullptr ||
         tot_value_len_col == nullptr ||
         num_rows_col == nullptr ||
-        row_state_col == nullptr)
+        value_data_type_col == nullptr)
     {
         printf("Failed getting Ndb columns for table %s\n", KEY_TABLE_NAME);
         return -1;
@@ -96,7 +96,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
     read_all_cols_specs[5].nullbit_byte_offset = 0;
     read_all_cols_specs[5].nullbit_bit_in_byte = 0;
 
-    read_all_cols_specs[6].column = row_state_col;
+    read_all_cols_specs[6].column = value_data_type_col;
     read_all_cols_specs[6].offset = offsetof(struct key_table, value_data_type);
     read_all_cols_specs[6].nullbit_byte_offset = 0;
     read_all_cols_specs[6].nullbit_bit_in_byte = 0;
@@ -116,7 +116,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
 int init_value_records(NdbDictionary::Dictionary *dict)
 {
     printf("Getting table %s\n", VALUE_TABLE_NAME);
-    const NdbDictionary::Table *tab = dict->getTable("redis_key_value");
+    const NdbDictionary::Table *tab = dict->getTable(VALUE_TABLE_NAME);
     if (tab == nullptr)
     {
         printf("Failed getting Ndb table %s\n", VALUE_TABLE_NAME);
