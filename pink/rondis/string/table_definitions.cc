@@ -18,12 +18,15 @@
  */
 int init_key_records(NdbDictionary::Dictionary *dict)
 {
+    printf("Getting table %s\n", KEY_TABLE_NAME);
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
     {
-        printf("Failed getting table for key table of STRING\n");
+        printf("Failed getting table %s\n", KEY_TABLE_NAME);
         return -1;
     }
+
+    printf("Getting columns for table %s\n", KEY_TABLE_NAME);
     const NdbDictionary::Column *redis_key_col = tab->getColumn(KEY_TABLE_COL_redis_key);
     const NdbDictionary::Column *rondb_key_col = tab->getColumn(KEY_TABLE_COL_rondb_key);
     const NdbDictionary::Column *expiry_date_col = tab->getColumn(KEY_TABLE_COL_expiry_date);
@@ -40,70 +43,71 @@ int init_key_records(NdbDictionary::Dictionary *dict)
         num_rows_col == nullptr ||
         row_state_col == nullptr)
     {
-        printf("Failed getting columns for key table of STRING\n");
+        printf("Failed getting columns for table %s\n", KEY_TABLE_NAME);
         return -1;
     }
 
-    NdbDictionary::RecordSpecification primary_redis_main_key_spec[1];
-    NdbDictionary::RecordSpecification all_redis_main_key_spec[7];
+    printf("Getting records for table %s\n", KEY_TABLE_NAME);
+    NdbDictionary::RecordSpecification pk_lookup_specs[1];
+    NdbDictionary::RecordSpecification read_all_cols_specs[7];
 
-    primary_redis_main_key_spec[0].column = redis_key_col;
-    primary_redis_main_key_spec[0].offset = offsetof(struct key_table, redis_key);
-    primary_redis_main_key_spec[0].nullbit_byte_offset = 0;
-    primary_redis_main_key_spec[0].nullbit_bit_in_byte = 0;
+    pk_lookup_specs[0].column = redis_key_col;
+    pk_lookup_specs[0].offset = offsetof(struct key_table, redis_key);
+    pk_lookup_specs[0].nullbit_byte_offset = 0;
+    pk_lookup_specs[0].nullbit_bit_in_byte = 0;
     pk_key_record =
         dict->createRecord(tab,
-                           primary_redis_main_key_spec,
+                           pk_lookup_specs,
                            1,
-                           sizeof(primary_redis_main_key_spec[0]));
+                           sizeof(pk_lookup_specs[0]));
     if (pk_key_record == nullptr)
     {
-        printf("Failed creating record for key table of STRING\n");
+        printf("Failed creating record for table %s\n", KEY_TABLE_NAME);
         return -1;
     }
 
-    all_redis_main_key_spec[0].column = redis_key_col;
-    all_redis_main_key_spec[0].offset = offsetof(struct key_table, redis_key);
-    all_redis_main_key_spec[0].nullbit_byte_offset = 0;
-    all_redis_main_key_spec[0].nullbit_bit_in_byte = 0;
+    read_all_cols_specs[0].column = redis_key_col;
+    read_all_cols_specs[0].offset = offsetof(struct key_table, redis_key);
+    read_all_cols_specs[0].nullbit_byte_offset = 0;
+    read_all_cols_specs[0].nullbit_bit_in_byte = 0;
 
-    all_redis_main_key_spec[1].column = rondb_key_col;
-    all_redis_main_key_spec[1].offset = offsetof(struct key_table, rondb_key);
-    all_redis_main_key_spec[1].nullbit_byte_offset = 0;
-    all_redis_main_key_spec[1].nullbit_bit_in_byte = 0;
+    read_all_cols_specs[1].column = rondb_key_col;
+    read_all_cols_specs[1].offset = offsetof(struct key_table, rondb_key);
+    read_all_cols_specs[1].nullbit_byte_offset = 0;
+    read_all_cols_specs[1].nullbit_bit_in_byte = 0;
 
-    all_redis_main_key_spec[2].column = expiry_date_col;
-    all_redis_main_key_spec[2].offset = offsetof(struct key_table, expiry_date);
-    all_redis_main_key_spec[2].nullbit_byte_offset = 0;
-    all_redis_main_key_spec[2].nullbit_bit_in_byte = 1;
+    read_all_cols_specs[2].column = expiry_date_col;
+    read_all_cols_specs[2].offset = offsetof(struct key_table, expiry_date);
+    read_all_cols_specs[2].nullbit_byte_offset = 0;
+    read_all_cols_specs[2].nullbit_bit_in_byte = 1;
 
-    all_redis_main_key_spec[3].column = value_start_col;
-    all_redis_main_key_spec[3].offset = offsetof(struct key_table, value_start);
-    all_redis_main_key_spec[3].nullbit_byte_offset = 0;
-    all_redis_main_key_spec[3].nullbit_bit_in_byte = 0;
+    read_all_cols_specs[3].column = value_start_col;
+    read_all_cols_specs[3].offset = offsetof(struct key_table, value_start);
+    read_all_cols_specs[3].nullbit_byte_offset = 0;
+    read_all_cols_specs[3].nullbit_bit_in_byte = 0;
 
-    all_redis_main_key_spec[4].column = tot_value_len_col;
-    all_redis_main_key_spec[4].offset = offsetof(struct key_table, tot_value_len);
-    all_redis_main_key_spec[4].nullbit_byte_offset = 0;
-    all_redis_main_key_spec[4].nullbit_bit_in_byte = 0;
+    read_all_cols_specs[4].column = tot_value_len_col;
+    read_all_cols_specs[4].offset = offsetof(struct key_table, tot_value_len);
+    read_all_cols_specs[4].nullbit_byte_offset = 0;
+    read_all_cols_specs[4].nullbit_bit_in_byte = 0;
 
-    all_redis_main_key_spec[5].column = num_rows_col;
-    all_redis_main_key_spec[5].offset = offsetof(struct key_table, num_rows);
-    all_redis_main_key_spec[5].nullbit_byte_offset = 0;
-    all_redis_main_key_spec[5].nullbit_bit_in_byte = 0;
+    read_all_cols_specs[5].column = num_rows_col;
+    read_all_cols_specs[5].offset = offsetof(struct key_table, num_rows);
+    read_all_cols_specs[5].nullbit_byte_offset = 0;
+    read_all_cols_specs[5].nullbit_bit_in_byte = 0;
 
-    all_redis_main_key_spec[6].column = row_state_col;
-    all_redis_main_key_spec[6].offset = offsetof(struct key_table, value_data_type);
-    all_redis_main_key_spec[6].nullbit_byte_offset = 0;
-    all_redis_main_key_spec[6].nullbit_bit_in_byte = 0;
+    read_all_cols_specs[6].column = row_state_col;
+    read_all_cols_specs[6].offset = offsetof(struct key_table, value_data_type);
+    read_all_cols_specs[6].nullbit_byte_offset = 0;
+    read_all_cols_specs[6].nullbit_bit_in_byte = 0;
 
     entire_key_record = dict->createRecord(tab,
-                                           all_redis_main_key_spec,
+                                           read_all_cols_specs,
                                            8,
-                                           sizeof(all_redis_main_key_spec[0]));
+                                           sizeof(read_all_cols_specs[0]));
     if (entire_key_record == nullptr)
     {
-        printf("Failed creating record for key table of STRING\n");
+        printf("Failed creating record for table %s\n", KEY_TABLE_NAME);
         return -1;
     }
     return 0;
@@ -114,7 +118,7 @@ int init_value_records(NdbDictionary::Dictionary *dict)
     const NdbDictionary::Table *tab = dict->getTable("redis_key_value");
     if (tab == nullptr)
     {
-        printf("Failed getting table for value table of STRING\n");
+        printf("Failed getting table for table %s\n", VALUE_TABLE_NAME);
         return -1;
     }
     const NdbDictionary::Column *rondb_key_col = tab->getColumn(VALUE_TABLE_COL_rondb_key);
@@ -124,55 +128,55 @@ int init_value_records(NdbDictionary::Dictionary *dict)
         ordinal_col == nullptr ||
         value_col == nullptr)
     {
-        printf("Failed getting columns for value table of STRING\n");
+        printf("Failed getting columns for table %s\n", VALUE_TABLE_NAME);
         return -1;
     }
 
-    NdbDictionary::RecordSpecification primary_redis_key_value_spec[2];
-    NdbDictionary::RecordSpecification all_redis_key_value_spec[3];
+    NdbDictionary::RecordSpecification pk_lookup_specs[2];
+    NdbDictionary::RecordSpecification read_all_cols_specs[3];
 
-    primary_redis_key_value_spec[0].column = rondb_key_col;
-    primary_redis_key_value_spec[0].offset = offsetof(struct value_table, rondb_key);
-    primary_redis_key_value_spec[0].nullbit_byte_offset = 0;
-    primary_redis_key_value_spec[0].nullbit_bit_in_byte = 0;
+    pk_lookup_specs[0].column = rondb_key_col;
+    pk_lookup_specs[0].offset = offsetof(struct value_table, rondb_key);
+    pk_lookup_specs[0].nullbit_byte_offset = 0;
+    pk_lookup_specs[0].nullbit_bit_in_byte = 0;
 
-    primary_redis_key_value_spec[1].column = ordinal_col;
-    primary_redis_key_value_spec[1].offset = offsetof(struct value_table, ordinal);
-    primary_redis_key_value_spec[1].nullbit_byte_offset = 0;
-    primary_redis_key_value_spec[1].nullbit_bit_in_byte = 0;
+    pk_lookup_specs[1].column = ordinal_col;
+    pk_lookup_specs[1].offset = offsetof(struct value_table, ordinal);
+    pk_lookup_specs[1].nullbit_byte_offset = 0;
+    pk_lookup_specs[1].nullbit_bit_in_byte = 0;
 
     pk_value_record = dict->createRecord(tab,
-                                         primary_redis_key_value_spec,
+                                         pk_lookup_specs,
                                          2,
-                                         sizeof(primary_redis_key_value_spec[0]));
+                                         sizeof(pk_lookup_specs[0]));
     if (pk_value_record == nullptr)
     {
-        printf("Failed creating record for value table of STRING\n");
+        printf("Failed creating record for table %s\n", VALUE_TABLE_NAME);
         return -1;
     }
 
-    all_redis_key_value_spec[0].column = rondb_key_col;
-    all_redis_key_value_spec[0].offset = offsetof(struct value_table, rondb_key);
-    all_redis_key_value_spec[0].nullbit_byte_offset = 0;
-    all_redis_key_value_spec[0].nullbit_bit_in_byte = 0;
+    read_all_cols_specs[0].column = rondb_key_col;
+    read_all_cols_specs[0].offset = offsetof(struct value_table, rondb_key);
+    read_all_cols_specs[0].nullbit_byte_offset = 0;
+    read_all_cols_specs[0].nullbit_bit_in_byte = 0;
 
-    all_redis_key_value_spec[1].column = ordinal_col;
-    all_redis_key_value_spec[1].offset = offsetof(struct value_table, ordinal);
-    all_redis_key_value_spec[1].nullbit_byte_offset = 0;
-    all_redis_key_value_spec[1].nullbit_bit_in_byte = 0;
+    read_all_cols_specs[1].column = ordinal_col;
+    read_all_cols_specs[1].offset = offsetof(struct value_table, ordinal);
+    read_all_cols_specs[1].nullbit_byte_offset = 0;
+    read_all_cols_specs[1].nullbit_bit_in_byte = 0;
 
-    all_redis_key_value_spec[2].column = value_col;
-    all_redis_key_value_spec[2].offset = offsetof(struct value_table, value);
-    all_redis_key_value_spec[2].nullbit_byte_offset = 0;
-    all_redis_key_value_spec[2].nullbit_bit_in_byte = 0;
+    read_all_cols_specs[2].column = value_col;
+    read_all_cols_specs[2].offset = offsetof(struct value_table, value);
+    read_all_cols_specs[2].nullbit_byte_offset = 0;
+    read_all_cols_specs[2].nullbit_bit_in_byte = 0;
 
     entire_value_record = dict->createRecord(tab,
-                                             all_redis_key_value_spec,
+                                             read_all_cols_specs,
                                              3,
-                                             sizeof(all_redis_key_value_spec[0]));
+                                             sizeof(read_all_cols_specs[0]));
     if (entire_value_record == nullptr)
     {
-        printf("Failed creating record for value table of STRING\n");
+        printf("Failed creating record for table %s\n", VALUE_TABLE_NAME);
         return -1;
     }
 
