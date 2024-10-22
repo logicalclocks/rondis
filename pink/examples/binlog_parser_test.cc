@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
   std::string one_command = "*3\r\n$3\r\nSET\r\n$1\r\na\r\n$2\r\nab\r\n";
 
   std::string binlog_body;
-  slash::PutFixed16(&binlog_body, 1); // type
+  // slash::PutFixed16(&binlog_body, 1); // type
   slash::PutFixed32(&binlog_body, 0); //exec_time
   slash::PutFixed32(&binlog_body, 10); // server_id
   slash::PutFixed64(&binlog_body, 0); // logic_id
@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
   binlog_body.append(one_command);
 
   std::string header;
-  slash::PutFixed16(&header, 2);
+  // slash::PutFixed16(&header, 2);
   slash::PutFixed32(&header, binlog_body.size());
 
   std::string command = header + binlog_body;
