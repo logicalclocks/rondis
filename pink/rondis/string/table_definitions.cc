@@ -66,11 +66,13 @@ int init_key_records(NdbDictionary::Dictionary *dict)
     std::map<const NdbDictionary::Column *, std::pair<size_t, int>> column_info_map = {
         {redis_key_col, {offsetof(struct key_table, redis_key), 0}},
         {rondb_key_col, {offsetof(struct key_table, rondb_key), 0}},
-        {expiry_date_col, {offsetof(struct key_table, expiry_date), 1}},
+        // TODO: This column is supposed to be nullable
+        {expiry_date_col, {offsetof(struct key_table, expiry_date), 0}},
         {value_start_col, {offsetof(struct key_table, value_start), 0}},
         {tot_value_len_col, {offsetof(struct key_table, tot_value_len), 0}},
         {num_rows_col, {offsetof(struct key_table, num_rows), 0}},
-        {value_data_type_col, {offsetof(struct key_table, value_data_type), 0}}};
+        {value_data_type_col, {offsetof(struct key_table, value_data_type), 0}}
+    };
 
     NdbDictionary::RecordSpecification read_all_cols_specs[column_info_map.size()];
     int i = 0;
