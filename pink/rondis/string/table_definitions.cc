@@ -63,47 +63,29 @@ int init_key_records(NdbDictionary::Dictionary *dict)
         return -1;
     }
 
-    const int NUM_COLS_READ_ALL_COLS = 7;
-    NdbDictionary::RecordSpecification read_all_cols_specs[NUM_COLS_READ_ALL_COLS];
+    std::map<const NdbDictionary::Column *, std::pair<size_t, int>> column_info_map = {
+        {redis_key_col, {offsetof(struct key_table, redis_key), 0}},
+        {rondb_key_col, {offsetof(struct key_table, rondb_key), 0}},
+        {expiry_date_col, {offsetof(struct key_table, expiry_date), 1}},
+        {value_start_col, {offsetof(struct key_table, value_start), 0}},
+        {tot_value_len_col, {offsetof(struct key_table, tot_value_len), 0}},
+        {num_rows_col, {offsetof(struct key_table, num_rows), 0}},
+        {value_data_type_col, {offsetof(struct key_table, value_data_type), 0}}};
 
-    read_all_cols_specs[0].column = redis_key_col;
-    read_all_cols_specs[0].offset = offsetof(struct key_table, redis_key);
-    read_all_cols_specs[0].nullbit_byte_offset = 0;
-    read_all_cols_specs[0].nullbit_bit_in_byte = 0;
-
-    read_all_cols_specs[1].column = rondb_key_col;
-    read_all_cols_specs[1].offset = offsetof(struct key_table, rondb_key);
-    read_all_cols_specs[1].nullbit_byte_offset = 0;
-    read_all_cols_specs[1].nullbit_bit_in_byte = 0;
-
-    read_all_cols_specs[2].column = expiry_date_col;
-    read_all_cols_specs[2].offset = offsetof(struct key_table, expiry_date);
-    read_all_cols_specs[2].nullbit_byte_offset = 0;
-    read_all_cols_specs[2].nullbit_bit_in_byte = 1;
-
-    read_all_cols_specs[3].column = value_start_col;
-    read_all_cols_specs[3].offset = offsetof(struct key_table, value_start);
-    read_all_cols_specs[3].nullbit_byte_offset = 0;
-    read_all_cols_specs[3].nullbit_bit_in_byte = 0;
-
-    read_all_cols_specs[4].column = tot_value_len_col;
-    read_all_cols_specs[4].offset = offsetof(struct key_table, tot_value_len);
-    read_all_cols_specs[4].nullbit_byte_offset = 0;
-    read_all_cols_specs[4].nullbit_bit_in_byte = 0;
-
-    read_all_cols_specs[5].column = num_rows_col;
-    read_all_cols_specs[5].offset = offsetof(struct key_table, num_rows);
-    read_all_cols_specs[5].nullbit_byte_offset = 0;
-    read_all_cols_specs[5].nullbit_bit_in_byte = 0;
-
-    read_all_cols_specs[6].column = value_data_type_col;
-    read_all_cols_specs[6].offset = offsetof(struct key_table, value_data_type);
-    read_all_cols_specs[6].nullbit_byte_offset = 0;
-    read_all_cols_specs[6].nullbit_bit_in_byte = 0;
+    NdbDictionary::RecordSpecification read_all_cols_specs[column_info_map.size()];
+    int i = 0;
+    for (const auto &entry : column_info_map)
+    {
+        read_all_cols_specs[i].column = entry.first;
+        read_all_cols_specs[i].offset = entry.second.first;
+        read_all_cols_specs[i].nullbit_byte_offset = 0;
+        read_all_cols_specs[i].nullbit_bit_in_byte = entry.second.second;
+        ++i;
+    }
 
     entire_key_record = dict->createRecord(tab,
                                            read_all_cols_specs,
-                                           NUM_COLS_READ_ALL_COLS,
+                                           column_info_map.size(),
                                            sizeof(read_all_cols_specs[0]));
     if (entire_key_record == nullptr)
     {
