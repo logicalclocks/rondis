@@ -10,8 +10,7 @@
 #include "table_definitions.h"
 
 void rondb_get_command(const pink::RedisCmdArgsType &argv,
-                       std::string *response,
-                       int fd)
+                       std::string *response)
 {
     const char *key_str = argv[1].c_str();
     Uint32 key_len = argv[1].size();
@@ -60,8 +59,7 @@ void rondb_get_command(const pink::RedisCmdArgsType &argv,
 }
 
 void rondb_set_command(const pink::RedisCmdArgsType &argv,
-                       std::string *response,
-                       int fd)
+                       std::string *response)
 {
     const char *key_str = argv[1].c_str();
     Uint32 key_len = argv[1].size();

@@ -87,7 +87,7 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
             printf("Invalid number of arguments for ping command\n");
             return -1;
         }
-        response->append("+PONG\r\n");
+        response->append("+OK\r\n");
     }
     else if (argv[0] == "GET")
     {
@@ -96,7 +96,7 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
             printf("Invalid number of arguments for GET command\n");
             return -1;
         }
-        rondb_get_command(argv, response, fd);
+        rondb_get_command(argv, response);
     }
     else if (argv[0] == "SET")
     {
@@ -105,7 +105,7 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
             printf("Invalid number of arguments for SET command\n");
             return -1;
         }
-        rondb_set_command(argv, response, fd);
+        rondb_set_command(argv, response);
     }
     else
     {

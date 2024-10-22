@@ -12,9 +12,7 @@
 */
 
 void rondb_get_command(const pink::RedisCmdArgsType &argv,
-                       std::string *response,
-                       int fd);
+                       std::string *response);
 
 void rondb_set_command(const pink::RedisCmdArgsType &argv,
-                       std::string *response,
-                       int fd);
+                       std::string *response);
