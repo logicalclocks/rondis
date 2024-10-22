@@ -10,7 +10,9 @@ CREATE TABLE redis.string_keys(
     -- value_data_type ENUM('string', 'number', 'binary_string'),
     -- Max 512MiB --> 512 * 1,048,576 bytes = 536,870,912 characters
     -- --> To describe the length, one needs at least UINT (4,294,967,295)
-    value_len INT UNSIGNED NOT NULL,
+    tot_value_len INT UNSIGNED NOT NULL,
+    -- Technically implicit
+    num_rows INT UNSIGNED NOT NULL,
     value_start VARBINARY(26500) NOT NULL,
     -- Redis supports get/set of seconds/miliseconds
     expiry_date INT UNSIGNED,
