@@ -18,15 +18,13 @@
  */
 int init_key_records(NdbDictionary::Dictionary *dict)
 {
-    printf("Getting table %s\n", KEY_TABLE_NAME);
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
     {
-        printf("Failed getting table %s\n", KEY_TABLE_NAME);
+        printf("Failed getting Ndb table %s\n", KEY_TABLE_NAME);
         return -1;
     }
 
-    printf("Getting columns for table %s\n", KEY_TABLE_NAME);
     const NdbDictionary::Column *redis_key_col = tab->getColumn(KEY_TABLE_COL_redis_key);
     const NdbDictionary::Column *rondb_key_col = tab->getColumn(KEY_TABLE_COL_rondb_key);
     const NdbDictionary::Column *expiry_date_col = tab->getColumn(KEY_TABLE_COL_expiry_date);
@@ -43,15 +41,13 @@ int init_key_records(NdbDictionary::Dictionary *dict)
         num_rows_col == nullptr ||
         row_state_col == nullptr)
     {
-        printf("Failed getting columns for table %s\n", KEY_TABLE_NAME);
+        printf("Failed getting Ndb columns for table %s\n", KEY_TABLE_NAME);
         return -1;
     }
 
-    printf("Getting records for table %s\n", KEY_TABLE_NAME);
+    printf("Creating records for table %s\n", KEY_TABLE_NAME);
     const int NUM_COLS_PK_LOOKUP = 1;
     NdbDictionary::RecordSpecification pk_lookup_specs[NUM_COLS_PK_LOOKUP];
-    const int NUM_COLS_READ_ALL_COLS = 7;
-    NdbDictionary::RecordSpecification read_all_cols_specs[NUM_COLS_READ_ALL_COLS];
 
     pk_lookup_specs[0].column = redis_key_col;
     pk_lookup_specs[0].offset = offsetof(struct key_table, redis_key);
@@ -64,9 +60,12 @@ int init_key_records(NdbDictionary::Dictionary *dict)
                            sizeof(pk_lookup_specs[0]));
     if (pk_key_record == nullptr)
     {
-        printf("Failed creating record for table %s\n", KEY_TABLE_NAME);
+        printf("Failed creating pk-lookup record for table %s\n", KEY_TABLE_NAME);
         return -1;
     }
+
+    const int NUM_COLS_READ_ALL_COLS = 7;
+    NdbDictionary::RecordSpecification read_all_cols_specs[NUM_COLS_READ_ALL_COLS];
 
     read_all_cols_specs[0].column = redis_key_col;
     read_all_cols_specs[0].offset = offsetof(struct key_table, redis_key);
@@ -109,7 +108,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
                                            sizeof(read_all_cols_specs[0]));
     if (entire_key_record == nullptr)
     {
-        printf("Failed creating record for table %s\n", KEY_TABLE_NAME);
+        printf("Failed creating read-all cols record for table %s\n", KEY_TABLE_NAME);
         return -1;
     }
     return 0;
@@ -121,11 +120,10 @@ int init_value_records(NdbDictionary::Dictionary *dict)
     const NdbDictionary::Table *tab = dict->getTable("redis_key_value");
     if (tab == nullptr)
     {
-        printf("Failed getting table for table %s\n", VALUE_TABLE_NAME);
+        printf("Failed getting Ndb table %s\n", VALUE_TABLE_NAME);
         return -1;
     }
 
-    printf("Getting columns for table %s\n", VALUE_TABLE_NAME);
     const NdbDictionary::Column *rondb_key_col = tab->getColumn(VALUE_TABLE_COL_rondb_key);
     const NdbDictionary::Column *ordinal_col = tab->getColumn(VALUE_TABLE_COL_ordinal);
     const NdbDictionary::Column *value_col = tab->getColumn(VALUE_TABLE_COL_value);
@@ -133,15 +131,12 @@ int init_value_records(NdbDictionary::Dictionary *dict)
         ordinal_col == nullptr ||
         value_col == nullptr)
     {
-        printf("Failed getting columns for table %s\n", VALUE_TABLE_NAME);
+        printf("Failed getting Ndb columns for table %s\n", VALUE_TABLE_NAME);
         return -1;
     }
 
-    printf("Getting records for table %s\n", VALUE_TABLE_NAME);
     const int NUM_COLS_PK_LOOKUP = 2;
     NdbDictionary::RecordSpecification pk_lookup_specs[NUM_COLS_PK_LOOKUP];
-    const int NUM_COLS_READ_ALL_COLS = 3;
-    NdbDictionary::RecordSpecification read_all_cols_specs[NUM_COLS_READ_ALL_COLS];
 
     pk_lookup_specs[0].column = rondb_key_col;
     pk_lookup_specs[0].offset = offsetof(struct value_table, rondb_key);
@@ -159,9 +154,12 @@ int init_value_records(NdbDictionary::Dictionary *dict)
                                          sizeof(pk_lookup_specs[0]));
     if (pk_value_record == nullptr)
     {
-        printf("Failed creating record for table %s\n", VALUE_TABLE_NAME);
+        printf("Failed creating pk-lookup record for table %s\n", VALUE_TABLE_NAME);
         return -1;
     }
+
+    const int NUM_COLS_READ_ALL_COLS = 3;
+    NdbDictionary::RecordSpecification read_all_cols_specs[NUM_COLS_READ_ALL_COLS];
 
     read_all_cols_specs[0].column = rondb_key_col;
     read_all_cols_specs[0].offset = offsetof(struct value_table, rondb_key);
@@ -184,7 +182,7 @@ int init_value_records(NdbDictionary::Dictionary *dict)
                                              sizeof(read_all_cols_specs[0]));
     if (entire_value_record == nullptr)
     {
-        printf("Failed creating record for table %s\n", VALUE_TABLE_NAME);
+        printf("Failed creating read-all cols record for table %s\n", VALUE_TABLE_NAME);
         return -1;
     }
 
