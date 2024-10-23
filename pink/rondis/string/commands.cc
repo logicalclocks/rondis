@@ -61,15 +61,16 @@ void rondb_get_command(const pink::RedisCmdArgsType &argv,
 void rondb_set_command(const pink::RedisCmdArgsType &argv,
                        std::string *response)
 {
-    const char *key_str = argv[1].c_str();
     Uint32 key_len = argv[1].size();
-    const char *value_str = argv[2].c_str();
-    Uint32 value_len = argv[2].size();
     if (key_len > MAX_KEY_VALUE_LEN)
     {
         failed_large_key(response);
         return;
     }
+
+    const char *key_str = argv[1].c_str();
+    const char *value_str = argv[2].c_str();
+    Uint32 value_len = argv[2].size();
 
     Ndb *ndb = rondb_ndb[0][0];
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
