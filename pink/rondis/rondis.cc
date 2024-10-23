@@ -14,8 +14,11 @@ std::map<std::string, std::string> db;
 class RondisConn : public RedisConn
 {
 public:
-    RondisConn(int fd, const std::string &ip_port, Thread *thread,
-               void *worker_specific_data);
+    RondisConn(
+        int fd,
+        const std::string &ip_port,
+        Thread *thread,
+        void *worker_specific_data);
     virtual ~RondisConn() = default;
 
 protected:
@@ -24,8 +27,11 @@ protected:
 private:
 };
 
-RondisConn::RondisConn(int fd, const std::string &ip_port,
-                       Thread *thread, void *worker_specific_data)
+RondisConn::RondisConn(
+    int fd,
+    const std::string &ip_port,
+    Thread *thread,
+    void *worker_specific_data)
     : RedisConn(fd, ip_port, thread)
 {
     // Handle worker_specific_data ...
@@ -45,9 +51,12 @@ int RondisConn::DealMessage(const RedisCmdArgsType &argv, std::string *response)
 class RondisConnFactory : public ConnFactory
 {
 public:
-    virtual std::shared_ptr<PinkConn> NewPinkConn(int connfd, const std::string &ip_port,
-                                                  Thread *thread,
-                                                  void *worker_specific_data, pink::PinkEpoll *pink_epoll = nullptr) const
+    virtual std::shared_ptr<PinkConn> NewPinkConn(
+        int connfd,
+        const std::string &ip_port,
+        Thread *thread,
+        void *worker_specific_data,
+        pink::PinkEpoll *pink_epoll = nullptr) const
     {
         return std::make_shared<RondisConn>(connfd, ip_port, thread, worker_specific_data);
     }
