@@ -25,17 +25,22 @@ class WorkerThread;
 class DispatchThread : public ServerThread {
  public:
   DispatchThread(int port,
-                 int work_num, ConnFactory* conn_factory,
+                 int work_num,
+                 ConnFactory* conn_factory,
                  int cron_interval,
                  int queue_limit,
                  const ServerHandle* handle);
-  DispatchThread(const std::string &ip, int port,
-                 int work_num, ConnFactory* conn_factory,
+  DispatchThread(const std::string &ip,
+                 int port,
+                 int work_num,
+                 ConnFactory* conn_factory,
                  int cron_interval,
                  int queue_limit,
                  const ServerHandle* handle);
-  DispatchThread(const std::set<std::string>& ips, int port,
-                 int work_num, ConnFactory* conn_factory,
+  DispatchThread(const std::set<std::string>& ips,
+                 int port,
+                 int work_num,
+                 ConnFactory* conn_factory,
                  int cron_interval,
                  int queue_limit,
                  const ServerHandle* handle);
