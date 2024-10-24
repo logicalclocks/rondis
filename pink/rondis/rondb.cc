@@ -7,6 +7,14 @@
 #include "string/table_definitions.h"
 #include "string/commands.h"
 
+/*
+    Ndb objects are not thread-safe. Hence, each worker thread / RonDB connection should
+    have its own Ndb object. If we have more worker threads than cluster connections, we
+    can create multiple Ndb objects from a single cluster connection.
+    Essentially we want:
+        num worker threads == number Ndbs objects
+    whereby some cluster connections may have created more Ndb objects than others.
+*/
 int initialize_ndb_objects(const char *connect_string, int num_ndb_objects)
 {
     Ndb_cluster_connection *rondb_conn[MAX_CONNECTIONS];
