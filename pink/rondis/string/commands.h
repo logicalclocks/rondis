@@ -11,8 +11,10 @@
     All STRING commands: https://redis.io/docs/latest/commands/?group=string
 */
 
-void rondb_get_command(const pink::RedisCmdArgsType &argv,
+void rondb_get_command(Ndb *ndb,
+                       const pink::RedisCmdArgsType &argv,
                        std::string *response);
 
-void rondb_set_command(const pink::RedisCmdArgsType &argv,
+void rondb_set_command(Ndb *ndb,
+                       const pink::RedisCmdArgsType &argv,
                        std::string *response);
