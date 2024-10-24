@@ -2,7 +2,6 @@
 #include <ndbapi/Ndb.hpp>
 
 #define MAX_CONNECTIONS 1
-#define MAX_NDB_PER_CONNECTION 1
 
 #define REDIS_DB_NAME "redis"
 
@@ -10,9 +9,6 @@
 
 #define RONDB_INTERNAL_ERROR 2
 #define READ_ERROR 626
-
-extern Ndb_cluster_connection *rondb_conn[MAX_CONNECTIONS];
-extern Ndb *rondb_ndb[MAX_CONNECTIONS][MAX_NDB_PER_CONNECTION];
 
 int execute_no_commit(NdbTransaction *trans, int &ret_code, bool allow_fail);
 int execute_commit(Ndb *ndb, NdbTransaction *trans, int &ret_code);

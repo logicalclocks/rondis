@@ -9,7 +9,8 @@
 #include "../common.h"
 #include "table_definitions.h"
 
-void rondb_get_command(const pink::RedisCmdArgsType &argv,
+void rondb_get_command(Ndb *ndb,
+                       const pink::RedisCmdArgsType &argv,
                        std::string *response)
 {
     const char *key_str = argv[1].c_str();
@@ -20,7 +21,6 @@ void rondb_get_command(const pink::RedisCmdArgsType &argv,
         return;
     }
 
-    Ndb *ndb = rondb_ndb[0][0];
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
@@ -58,8 +58,10 @@ void rondb_get_command(const pink::RedisCmdArgsType &argv,
     }
 }
 
-void rondb_set_command(const pink::RedisCmdArgsType &argv,
-                       std::string *response)
+void rondb_set_command(
+    Ndb *ndb,
+    const pink::RedisCmdArgsType &argv,
+    std::string *response)
 {
     Uint32 key_len = argv[1].size();
     if (key_len > MAX_KEY_VALUE_LEN)
@@ -72,7 +74,6 @@ void rondb_set_command(const pink::RedisCmdArgsType &argv,
     const char *value_str = argv[2].c_str();
     Uint32 value_len = argv[2].size();
 
-    Ndb *ndb = rondb_ndb[0][0];
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
     if (dict == nullptr)
     {

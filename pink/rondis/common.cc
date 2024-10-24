@@ -5,9 +5,6 @@
 
 #include "common.h"
 
-#define MAX_CONNECTIONS 1
-#define MAX_NDB_PER_CONNECTION 1
-
 #define FOREIGN_KEY_RESTRICT_ERROR 256
 
 
