@@ -10,6 +10,7 @@
 #include "pink/include/pink_thread.h"
 #include "pink/src/dispatch_thread.h"
 #include "rondb.h"
+#include "common.h"
 
 using namespace pink;
 
@@ -21,11 +22,15 @@ class RondisHandle : public ServerHandle
 public:
     RondisHandle() : counter(0) {}
 
+    /*
+        We define this so each connection knows from which worker thread it is
+        running from. This enables us to to distribute Ndb objects across
+        multiple worker threads.
+    */
     int CreateWorkerSpecificData(void **data) const override
     {
         std::lock_guard<std::mutex> lock(mutex);
         *data = new int(counter++);
-        printf("CreateWorkerSpecificData: %d\n", counter);
         return 0;
     }
 
@@ -121,6 +126,11 @@ int main(int argc, char *argv[])
         worker_threads = atoi(argv[3]);
     }
     printf("Server will listen to %d and connect to MGMd at %s\n", port, connect_string);
+
+    if (worker_threads < MAX_CONNECTIONS) {
+        printf("Number of worker threads must be at least %d, otherwise we are wasting resources\n", MAX_CONNECTIONS);
+        return -1;
+    }
 
     ndb_objects.resize(worker_threads);
 
