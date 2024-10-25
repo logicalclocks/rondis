@@ -1,7 +1,7 @@
 #include <ndbapi/NdbApi.hpp>
 #include <ndbapi/Ndb.hpp>
 
-#define MAX_CONNECTIONS 4
+#define MAX_CONNECTIONS 2
 
 #define REDIS_DB_NAME "redis"
 

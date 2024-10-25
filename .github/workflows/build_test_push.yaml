@@ -1,0 +1,64 @@
+name: Run Redis benchmark on Rondis
+
+on:
+  # Launch on any push
+  push:
+  pull_request:
+    # Not running on "closed" - that is taken care of by "push" (if merged)
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build-and-run-redis-benchmark:
+    runs-on: ubuntu-latest
+    env:
+      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
+      RONDB_PATH: /tmp/rondb
+      CONTAINER_NAME: rondis
+      RONDIS_PORT: 6379
+    steps:
+      - name: Run rondb-docker
+        run: |
+          git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git
+          cd rondb-docker
+          ./build_run_docker.sh -d \
+            --size small \
+            --num-mgm-nodes 1 \
+            --node-groups 1 \
+            --replication-factor 1 \
+            --num-mysql-nodes 1 \
+            --num-rest-api-nodes 0 \
+            --num-benchmarking-nodes 0
+
+      - name: Download RonDB
+        run: |
+          wget $RONDB_TARBALL_URI -O ./temp_tarball.tar.gz \
+            && tar xfz ./temp_tarball.tar.gz -C $RONDB_PATH --strip-components=1 \
+            && rm ./temp_tarball.tar.gz
+
+      - name: Build and Run RonDB Service
+        run: |
+          docker build -t rondis:latest .
+          docker run -d \
+            --name=$CONTAINER_NAME \
+            -v $RONDB_PATH:/tmp/rondb \
+            -e RONDB_PATH=/tmp/rondb \
+            -p $RONDIS_PORT:$RONDIS_PORT \
+            --entrypoint=/bin/bash \
+            rondis:latest
+
+      - name: Build Pink
+        run: docker exec -it $CONTAINER_NAME bash -c "cd pink && make"
+
+      - name: Connect Docker network
+        run: |
+          # Get network name that starts with "rondb"
+          COMPOSE_NETWORK=$(docker network list | grep rondb | awk '{print $2}')
+          docker network connect $COMPOSE_NETWORK $CONTAINER_NAME
+
+      - name: Run Rondis
+        run: docker exec -it $CONTAINER_NAME bash -d \
+            -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib pink/rondis/rondis 6379 mgmd_1:1186 2"
+
+      - name: Run Redis benchmark
+        run: docker exec -it $CONTAINER_NAME bash \
+            -c "redis-benchmark -t set -c 2"
