@@ -19,7 +19,7 @@ jobs:
       - name: Run rondb-docker
         run: |
           git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git
-          ./rondb-docker/build_run_docker.sh -d \
+          cd rondb-docker && ./build_run_docker.sh -d \
             --size small \
             --num-mgm-nodes 1 \
             --node-groups 1 \
