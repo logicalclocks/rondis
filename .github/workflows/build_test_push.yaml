@@ -60,7 +60,8 @@ jobs:
           echo $pwd && ls -la
 
       - name: Create Rondis environment
-        run: docker run -d \
+        run: |
+          docker run -d \
             --name=$CONTAINER_NAME \
             -v $RONDB_PATH:/tmp/rondb \
             -e RONDB_PATH=/tmp/rondb \
