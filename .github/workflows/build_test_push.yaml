@@ -17,6 +17,9 @@ jobs:
       CONTAINER_NAME: rondis
       RONDIS_PORT: 6379
     steps:
+      - name: Build Rondis image
+        run: docker build -t $IMAGE_NAME -f Dockerfile .
+
       - name: Run rondb-docker
         env:
             RONDB_DOCKER_DIR: /tmp/rondb-docker
@@ -49,11 +52,6 @@ jobs:
           (set +e; ls -la $RONDB_PATH)
           echo $pwd && ls -la
 
-      - run: echo $pwd && ls -la
-
-      - name: Build Rondis image
-        run: docker build -t $IMAGE_NAME -f Dockerfile .
-
       - name: Create Rondis environment
         run: docker run -d \
             --name=$CONTAINER_NAME \
@@ -63,6 +61,7 @@ jobs:
             --entrypoint=/bin/bash \
             $IMAGE_NAME
 
+      # TODO: Run SQL against MySQL
       - name: Build Pink
         run: docker exec -it $CONTAINER_NAME bash -c "cd pink && make"
 
