@@ -17,10 +17,12 @@ jobs:
       RONDIS_PORT: 6379
     steps:
       - name: Run rondb-docker
+        env:
+            RONDB_DOCKER_DIR: /tmp/rondb-docker
         run: |
           path_now=$(pwd)
-          git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git /tmp
-          cd /tmp/rondb-docker && ./build_run_docker.sh -d \
+          git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git $RONDB_DOCKER_DIR
+          cd $RONDB_DOCKER_DIR && ./build_run_docker.sh -d \
             --size small \
             --num-mgm-nodes 1 \
             --node-groups 1 \
