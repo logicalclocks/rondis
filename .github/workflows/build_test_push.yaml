@@ -68,7 +68,7 @@ jobs:
 
       # TODO: Run SQL against MySQL
       - name: Build Pink
-        run: docker exec -i $CONTAINER_NAME bash -c "cd pink && make"
+        run: docker exec -i $CONTAINER_NAME bash -c "cd pink && make clean && make"
 
       - name: Connect Docker network
         run: |
