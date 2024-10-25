@@ -63,8 +63,8 @@ jobs:
             -v $RONDB_PATH:/tmp/rondb \
             -e RONDB_PATH=/tmp/rondb \
             -p $RONDIS_PORT:$RONDIS_PORT \
-            --entrypoint=/bin/bash \
-            $IMAGE_NAME
+            $IMAGE_NAME \
+            tail -f /dev/null
 
       # TODO: Run SQL against MySQL
       - name: Build Pink
