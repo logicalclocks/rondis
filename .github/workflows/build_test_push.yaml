@@ -34,6 +34,7 @@ jobs:
           set -x
           wget $RONDB_TARBALL_URI -O /tmp/temp_tarball.tar.gz
           (set +e; ls -la /tmp)
+          mkdir -p $RONDB_PATH
           tar xfz /tmp/temp_tarball.tar.gz -C $RONDB_PATH --strip-components=1
           (set +e; ls -la /tmp)
           (set +e; ls -la $RONDB_PATH)
