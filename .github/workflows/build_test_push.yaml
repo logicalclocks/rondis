@@ -46,6 +46,7 @@ jobs:
       - name: Build Rondis environment
         run: |
           ls -la
+          sleep 2
           docker build -t rondis:latest -f Dockerfile .
           docker run -d \
             --name=$CONTAINER_NAME \
