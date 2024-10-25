@@ -18,10 +18,9 @@ jobs:
     steps:
       - name: Run rondb-docker
         run: |
-          echo $PWD
-          ls -la
-          git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git
-          cd rondb-docker && ./build_run_docker.sh -d \
+          path_now=$(PWD)
+          git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git /tmp
+          cd /tmp/rondb-docker && ./build_run_docker.sh -d \
             --size small \
             --num-mgm-nodes 1 \
             --node-groups 1 \
@@ -29,6 +28,7 @@ jobs:
             --num-mysql-nodes 1 \
             --num-rest-api-nodes 0 \
             --num-benchmarking-nodes 0
+          cd $path_now
 
       - name: Download RonDB
         run: |
