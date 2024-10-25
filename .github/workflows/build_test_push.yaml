@@ -29,7 +29,6 @@ jobs:
             RONDB_DOCKER_DIR: /tmp/rondb-docker
         run: |
           set -x
-          echo $pwd && ls -la
           path_now=$(pwd)
           git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git $RONDB_DOCKER_DIR
           cd $RONDB_DOCKER_DIR && ./build_run_docker.sh -d \
@@ -40,21 +39,14 @@ jobs:
             --num-mysql-nodes 1 \
             --num-rest-api-nodes 0 \
             --num-benchmarking-nodes 0
-          echo $path_now
           cd $path_now
-          echo $pwd && ls -la
 
       - name: Download RonDB
         run: |
           set -x
-          echo $pwd && ls -la
           wget $RONDB_TARBALL_URI -O /tmp/temp_tarball.tar.gz
-          (set +e; ls -la /tmp)
           mkdir -p $RONDB_PATH
           tar xfz /tmp/temp_tarball.tar.gz -C $RONDB_PATH --strip-components=1
-          (set +e; ls -la /tmp)
-          (set +e; ls -la $RONDB_PATH)
-          echo $pwd && ls -la
 
       - name: Create Rondis environment
         run: |
