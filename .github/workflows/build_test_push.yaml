@@ -30,6 +30,7 @@ jobs:
             --num-mysql-nodes 1 \
             --num-rest-api-nodes 0 \
             --num-benchmarking-nodes 0
+          echo $path_now
           cd $path_now
 
       - name: Download RonDB
@@ -44,8 +45,7 @@ jobs:
 
       - name: Build Rondis environment
         run: |
-          echo $pwd
-          ls -la ./**
+          ls -la
           docker build -t rondis:latest -f Dockerfile .
           docker run -d \
             --name=$CONTAINER_NAME \
