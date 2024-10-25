@@ -18,7 +18,10 @@ jobs:
       RONDIS_PORT: 6379
     steps:
       - name: Build Rondis image
-        run: ls -la && docker build -t $IMAGE_NAME -f Dockerfile .
+        run: ls -la
+
+      - name: Build Rondis image
+        run: docker build -t $IMAGE_NAME -f Dockerfile .
 
       - name: Run rondb-docker
         env:
