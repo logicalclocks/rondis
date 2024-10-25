@@ -19,8 +19,7 @@ jobs:
       - name: Run rondb-docker
         run: |
           git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git
-          cd rondb-docker
-          ./build_run_docker.sh -d \
+          ./rondb-docker/build_run_docker.sh -d \
             --size small \
             --num-mgm-nodes 1 \
             --node-groups 1 \
@@ -38,7 +37,6 @@ jobs:
           tar xfz /tmp/temp_tarball.tar.gz -C $RONDB_PATH --strip-components=1
           (set +e; ls -la /tmp)
           (set +e; ls -la $RONDB_PATH)
-          rm /tmp/temp_tarball.tar.gz
 
       - name: Build and Run RonDB Service
         run: |
