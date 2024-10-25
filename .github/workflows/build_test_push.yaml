@@ -33,11 +33,11 @@ jobs:
         run: |
           set -x
           wget $RONDB_TARBALL_URI -O ./temp_tarball.tar.gz
-          ls -la ./**
-          ls -la /tmp/**
+          (set +e; ls -la ./**)
+          (set +e; ls -la /tmp/**)
           tar xfz ./temp_tarball.tar.gz -C $RONDB_PATH --strip-components=1
-          ls -la ./**
-          ls -la /tmp/**
+          (set +e; ls -la ./**)
+          (set +e; ls -la /tmp/**)
           rm ./temp_tarball.tar.gz
 
       - name: Build and Run RonDB Service
