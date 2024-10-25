@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Run rondb-docker
         run: |
-          path_now=$(PWD)
+          path_now=$(pwd)
           git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git /tmp
           cd /tmp/rondb-docker && ./build_run_docker.sh -d \
             --size small \
@@ -42,7 +42,7 @@ jobs:
 
       - name: Build Rondis environment
         run: |
-          echo $PWD
+          echo $pwd
           ls -la ./**
           docker build -t rondis:latest -f Dockerfile .
           docker run -d \
