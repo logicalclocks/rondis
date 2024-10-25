@@ -22,9 +22,6 @@ jobs:
           fetch-depth: 0
 
       - name: Build Rondis image
-        run: ls -la
-
-      - name: Build Rondis image
         run: docker build -t $IMAGE_NAME -f Dockerfile .
 
       - name: Run rondb-docker
@@ -71,7 +68,7 @@ jobs:
 
       # TODO: Run SQL against MySQL
       - name: Build Pink
-        run: docker exec -it $CONTAINER_NAME bash -c "cd pink && make"
+        run: docker exec -i $CONTAINER_NAME bash -c "cd pink && make"
 
       - name: Connect Docker network
         run: |
@@ -80,9 +77,9 @@ jobs:
           docker network connect $COMPOSE_NETWORK $CONTAINER_NAME
 
       - name: Run Rondis
-        run: docker exec -it $CONTAINER_NAME bash -d \
+        run: docker exec -i $CONTAINER_NAME bash -d \
             -c "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib pink/rondis/rondis 6379 mgmd_1:1186 2"
 
       - name: Run Redis benchmark
-        run: docker exec -it $CONTAINER_NAME bash \
+        run: docker exec -i $CONTAINER_NAME bash \
             -c "redis-benchmark -t set -c 2"
