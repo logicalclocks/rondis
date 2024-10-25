@@ -13,6 +13,7 @@ jobs:
     env:
       RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
       RONDB_PATH: /tmp/rondb
+      IMAGE_NAME: rondis:latest
       CONTAINER_NAME: rondis
       RONDIS_PORT: 6379
     steps:
@@ -43,18 +44,19 @@ jobs:
           (set +e; ls -la /tmp)
           (set +e; ls -la $RONDB_PATH)
 
-      - name: Build Rondis environment
-        run: |
-          ls -la
-          sleep 2
-          docker build -t rondis:latest -f Dockerfile .
-          docker run -d \
+      - run: ls -la
+
+      - name: Build Rondis image
+        run: docker build -t $IMAGE_NAME -f Dockerfile .
+
+      - name: Create Rondis environment
+        run: docker run -d \
             --name=$CONTAINER_NAME \
             -v $RONDB_PATH:/tmp/rondb \
             -e RONDB_PATH=/tmp/rondb \
             -p $RONDIS_PORT:$RONDIS_PORT \
             --entrypoint=/bin/bash \
-            rondis:latest
+            $IMAGE_NAME
 
       - name: Build Pink
         run: docker exec -it $CONTAINER_NAME bash -c "cd pink && make"
