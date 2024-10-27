@@ -21,6 +21,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Run rondb-docker
+        env:
+          RONDB_DOCKER_DIR: /tmp/rondb-docker
+        run: |
+            set -x
+            path_now=$(pwd)
+            git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git $RONDB_DOCKER_DIR
+            cd $RONDB_DOCKER_DIR && ./build_run_docker.sh -d \
+              --size small \
+              --num-mgm-nodes 1 \
+              --node-groups 1 \
+              --replication-factor 1 \
+              --num-mysql-nodes 1 \
+              --num-rest-api-nodes 0 \
+              --num-benchmarking-nodes 0
+            cd $path_now
+
       - name: Build Rondis image
         run: docker build -t $IMAGE_NAME .
 
@@ -43,23 +60,6 @@ jobs:
 
       - name: Build Pink
         run: docker exec -i $CONTAINER_NAME bash -c "cd pink && ./build.sh"
-
-      - name: Run rondb-docker
-        env:
-          RONDB_DOCKER_DIR: /tmp/rondb-docker
-        run: |
-            set -x
-            path_now=$(pwd)
-            git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git $RONDB_DOCKER_DIR
-            cd $RONDB_DOCKER_DIR && ./build_run_docker.sh -d \
-              --size small \
-              --num-mgm-nodes 1 \
-              --node-groups 1 \
-              --replication-factor 1 \
-              --num-mysql-nodes 1 \
-              --num-rest-api-nodes 0 \
-              --num-benchmarking-nodes 0
-            cd $path_now
 
       - name: Run SQL scripts
         run: |
