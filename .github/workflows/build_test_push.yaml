@@ -65,7 +65,7 @@ jobs:
         run: |
           docker exec -i mysqld_1 bash -c "mysql -uroot -e 'CREATE DATABASE redis;'"
           for sql_file in pink/rondis/sql/*.sql; do
-            docker exec -i mysqld_1 bash -c "mysql -uroot redis < /tmp/rondb/sql/$(basename $sql_file)"
+            cat "$sql_file" | docker exec -i mysqld_1 mysql -uroot
           done
 
       - name: Connect Docker network
