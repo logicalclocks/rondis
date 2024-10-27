@@ -77,7 +77,7 @@ jobs:
       - name: Run Rondis
         run: |
           docker exec -i $CONTAINER_NAME bash -c \
-            "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib && pink/rondis/rondis 6379 mgmd_1:1186 2"
+            "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib && pink/rondis/rondis 6379 mgmd_1:1186 2 &"
 
       - name: Run Redis benchmark
         run: docker exec -i $CONTAINER_NAME bash \
