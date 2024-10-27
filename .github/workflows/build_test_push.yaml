@@ -6,7 +6,6 @@ on:
     branches:
         - main
         - master
-    # Not running on "closed" - that is taken care of by "push" (if merged)
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -84,4 +83,4 @@ jobs:
             "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib && pink/rondis/rondis 6379 mgmd_1:1186 2 &"
 
       - name: Run Redis benchmark
-        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t set -c 2"
+        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t get,set -c 2"
