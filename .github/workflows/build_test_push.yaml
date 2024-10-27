@@ -41,7 +41,6 @@ jobs:
             $IMAGE_NAME \
             tail -f /dev/null
 
-      # TODO: Run SQL against MySQL
       - name: Build Pink
         run: docker exec -i $CONTAINER_NAME bash -c "cd pink && ./build.sh"
 
@@ -61,6 +60,13 @@ jobs:
               --num-rest-api-nodes 0 \
               --num-benchmarking-nodes 0
             cd $path_now
+
+      - name: Run SQL scripts
+        run: |
+          docker exec -i mysqld_1 bash -c "mysql -uroot -e 'CREATE DATABASE redis;'"
+          for sql_file in pink/rondis/sql/*.sql; do
+            docker exec -i mysqld_1 bash -c "mysql -uroot redis < /tmp/rondb/sql/$(basename $sql_file)"
+          done
 
       - name: Connect Docker network
         run: |
