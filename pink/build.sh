@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 PINK_PATH=$PWD
 
 # We depend on slash
