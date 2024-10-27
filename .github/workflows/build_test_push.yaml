@@ -1,9 +1,11 @@
 name: Run Redis benchmark on Rondis
 
 on:
-  # Launch on any push
-  push:
   pull_request:
+    # Launch on PRs *towards* these branches
+    branches:
+        - main
+        - master
     # Not running on "closed" - that is taken care of by "push" (if merged)
     types: [opened, synchronize, reopened]
 
