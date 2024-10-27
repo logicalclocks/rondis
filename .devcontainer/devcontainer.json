@@ -1,6 +1,11 @@
 {
     "name": "Pink builder",
-    "image": "ubuntu:22.04",
+    "build": {
+        "context": "..",
+        "dockerfile": "../Dockerfile"
+    },
+    "workspaceMount": "source=${localWorkspaceFolder},target=/usr/src/app,type=bind",
+	"workspaceFolder": "/usr/src/app",
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2.5.1": {},
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
@@ -26,10 +31,9 @@
             }
         }
     },
-    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y build-essential redis-server libprotobuf-dev protobuf-compiler",
     "containerEnv": {
-        "RONDB_PATH": "/workspaces/pink/rondb-22.10.5-linux-glibc2.28-arm64_v8"
+        "RONDB_PATH": "/usr/src/app/rondb-22.10.5-linux-glibc2.28-arm64_v8"
         // Do this manually:
-        // export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/workspaces/pink/rondb-22.10.5-linux-glibc2.28-arm64_v8/lib
+        // export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/src/app/rondb-22.10.5-linux-glibc2.28-arm64_v8/lib
     }
 }

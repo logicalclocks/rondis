@@ -51,11 +51,15 @@ jobs:
           tar xfz /tmp/temp_tarball.tar.gz -C $RONDB_PATH --strip-components=1
         
       - name: Create Rondis environment
+        env:
+          DOCKER_WORK_DIR: /usr/src/app
         run: |
           docker run -d \
             --name=$CONTAINER_NAME \
-            -v $RONDB_PATH:/tmp/rondb \
-            -e RONDB_PATH=/tmp/rondb \
+            -v $RONDB_PATH:$RONDB_PATH \
+            -v $(pwd):$DOCKER_WORK_DIR \
+            -e RONDB_PATH=$RONDB_PATH \
+            -w $DOCKER_WORK_DIR \
             -p $RONDIS_PORT:$RONDIS_PORT \
             $IMAGE_NAME \
             tail -f /dev/null
