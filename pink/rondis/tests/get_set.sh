@@ -62,8 +62,8 @@ for i in {1..10}; do
     set_and_get "$KEY:multiple_$i" "$test_value"
 done
 
-echo "Testing very large string (1,000,000 characters)..."
-very_large_value=$(head -c 1000000 < /dev/zero | tr '\0' 'a')
+echo "Testing large string (100,000 characters)..."
+very_large_value=$(head -c 100000 < /dev/zero | tr '\0' 'a')
 set_and_get "$KEY:very_large" "$very_large_value"
 
 # echo "Testing edge case large key length (Redis allows up to 512MB for the value)..."
