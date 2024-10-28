@@ -54,13 +54,13 @@ large_value=$(head -c 10000 < /dev/zero | tr '\0' 'a')
 set_and_get "$KEY:large" "$large_value"
 
 echo "Testing xl string (100,000 characters)..."
-xl_large_value=$(head -c 100000 < /dev/zero | tr '\0' 'a')
-set_and_get "$KEY:xl_large" "$xl_large_value"
+xl_value=$(head -c 100000 < /dev/zero | tr '\0' 'a')
+set_and_get "$KEY:xl" "$xl_value"
 
 echo "Testing xxl string (1,000,000 characters)..."
 xxl_file=$(mktemp)
 head -c 1000000 < /dev/zero | tr '\0' 'a' > "$xxl_file"
-set_and_get "$KEY:xxl_large" "$xxl_file"
+set_and_get "$KEY:xxl" "$xxl_file"
 rm "$xxl_file"
 
 echo "Testing non-ASCII string..."
