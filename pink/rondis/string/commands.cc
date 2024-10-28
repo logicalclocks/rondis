@@ -9,6 +9,20 @@
 #include "../common.h"
 #include "table_definitions.h"
 
+/*
+    A successful GET will return in this format:
+        $5
+        Hello
+    where:
+    - $ indicates a Bulk String reply
+    - 5 is the length of the value ("Hello" has 5 characters)
+    - Hello is the actual value stored at the key
+    Special cases:
+        $-1
+    The key does not exist.
+        $0
+    The key exists but has no value (empty string).
+*/
 void rondb_get_command(Ndb *ndb,
                        const pink::RedisCmdArgsType &argv,
                        std::string *response)
