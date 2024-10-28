@@ -45,6 +45,20 @@ echo "Testing large string (10,000 characters)..."
 large_value=$(head -c 10000 < /dev/zero | tr '\0' 'a')
 set_and_get "$KEY:large" "$large_value"
 
+echo "Testing xl string (100,000 characters)..."
+xl_large_value=$(head -c 100000 < /dev/zero | tr '\0' 'a')
+set_and_get "$KEY:xl_large" "$xl_large_value"
+
+echo "Testing xxl string (1,000,000 characters)..."
+xxl_file=$(mktemp)
+head -c 1000000 < /dev/zero | tr '\0' 'a' > "$xxl_file"
+
+# Set the key using the content of the temporary file
+$REDIS_CLI --pipe <<EOF
+SET $KEY:xxl $(< "$xxl_file")
+EOF
+rm "$xxl_file"
+
 echo "Testing non-ASCII string..."
 set_and_get "$KEY:nonascii" "こんにちは世界"  # Japanese for "Hello, World"
 
@@ -61,10 +75,6 @@ for i in {1..10}; do
     test_value="Value_$i"_$(head -c $((RANDOM % 100 + 1)) < /dev/zero | tr '\0' 'a')
     set_and_get "$KEY:multiple_$i" "$test_value"
 done
-
-echo "Testing large string (100,000 characters)..."
-very_large_value=$(head -c 100000 < /dev/zero | tr '\0' 'a')
-set_and_get "$KEY:very_large" "$very_large_value"
 
 # echo "Testing edge case large key length (Redis allows up to 512MB for the value)..."
 # edge_value=$(head -c 100000 < /dev/zero | tr '\0' 'b')
