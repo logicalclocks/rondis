@@ -10,7 +10,9 @@ function set_and_get() {
     local value="$2"
     
     # Set the value in Redis
+    set -e
     $REDIS_CLI SET "$key" "$value"
+    set +e
     
     # Retrieve the value
     local result=$($REDIS_CLI GET "$key")
