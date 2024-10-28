@@ -21,6 +21,7 @@ EOF
 
     echo $set_output
     if [[ $set_output == ERR* ]]; then
+        echo "FAIL: Could not SET $key with given value"
         exit 1
     fi
     
