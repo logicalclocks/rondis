@@ -51,7 +51,7 @@ very_large_value=$(head -c 1000000 < /dev/zero | tr '\0' 'a')
 set_and_get "$KEY:very_large" "$very_large_value"
 
 echo "Testing binary data..."
-binary_value=$(echo -e "\x00\x01\x02\x03\x04\x05\x06\x07")
+binary_value=$(echo -e "\x01\x02\x03\x04\x05\x06\x07")
 set_and_get "$KEY:binary" "$binary_value"
 
 echo "Testing unicode characters..."
