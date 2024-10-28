@@ -2,8 +2,6 @@
 
 set -e
 
-# Redis connection details (modify if needed)
-REDIS_CLI="redis-cli"  # Adjust if redis-cli is not in your PATH
 KEY="test_key"
 
 # Function to set a value and retrieve it, then verify if it matches
@@ -13,17 +11,17 @@ function set_and_get() {
     
     # Set the value in Redis
     if [[ -f "$value" ]]; then
-        $REDIS_CLI --pipe <<EOF
+        redis-cli --pipe <<EOF
 SET $key $(< "$value")
 EOF
         # TODO: Check this later
         return 0
     else
-        $REDIS_CLI SET "$key" "$value"
+        redis-cli SET "$key" "$value"
     fi
     
     # Retrieve the value
-    local result=$($REDIS_CLI GET "$key")
+    local result=$(redis-cli GET "$key")
     
     # Check if the retrieved value matches the expected value
     if [[ "$result" == "$value" ]]; then
