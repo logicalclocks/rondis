@@ -12,7 +12,15 @@ function set_and_get() {
     local value="$2"
     
     # Set the value in Redis
-    $REDIS_CLI SET "$key" "$value"
+    if [[ -f "$value" ]]; then
+        $REDIS_CLI --pipe <<EOF
+SET $key $(< "$value")
+EOF
+        # TODO: Check this later
+        return 0
+    else
+        $REDIS_CLI SET "$key" "$value"
+    fi
     
     # Retrieve the value
     local result=$($REDIS_CLI GET "$key")
@@ -52,11 +60,7 @@ set_and_get "$KEY:xl_large" "$xl_large_value"
 echo "Testing xxl string (1,000,000 characters)..."
 xxl_file=$(mktemp)
 head -c 1000000 < /dev/zero | tr '\0' 'a' > "$xxl_file"
-
-# Set the key using the content of the temporary file
-$REDIS_CLI --pipe <<EOF
-SET $KEY:xxl $(< "$xxl_file")
-EOF
+set_and_get "$KEY:xxl_large" "$xxl_file"
 rm "$xxl_file"
 
 echo "Testing non-ASCII string..."
