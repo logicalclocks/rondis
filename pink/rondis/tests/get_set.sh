@@ -9,18 +9,22 @@ function set_and_get() {
     local key="$1"
     local value="$2"
     
-    # Set the value in Redis
+    # SET the value in Redis
     if [[ -f "$value" ]]; then
-        redis-cli --pipe <<EOF
+        set_output=$(redis-cli --pipe <<EOF
 SET $key $(< "$value")
 EOF
-        # TODO: Check this later
-        return 0
+)
     else
-        redis-cli SET "$key" "$value"
+        set_output=$(redis-cli SET "$key" "$value")
+    fi
+
+    echo $set_output
+    if [[ $set_output == ERR* ]]; then
+        exit 1
     fi
     
-    # Retrieve the value
+    # GET the value
     local result=$(redis-cli GET "$key")
     
     # Check if the retrieved value matches the expected value
