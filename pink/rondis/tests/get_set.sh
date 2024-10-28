@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Redis connection details (modify if needed)
 REDIS_CLI="redis-cli"  # Adjust if redis-cli is not in your PATH
 KEY="test_key"
@@ -10,9 +12,7 @@ function set_and_get() {
     local value="$2"
     
     # Set the value in Redis
-    set -e
     $REDIS_CLI SET "$key" "$value"
-    set +e
     
     # Retrieve the value
     local result=$($REDIS_CLI GET "$key")
