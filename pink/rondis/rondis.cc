@@ -69,12 +69,14 @@ RondisConn::RondisConn(
 
 int RondisConn::DealMessage(const RedisCmdArgsType &argv, std::string *response)
 {
-    printf("Received Redis message: ");
-    for (int i = 0; i < argv.size(); i++)
-    {
-        printf("%s ", argv[i].c_str());
-    }
-    printf("\n");
+    /*    
+        printf("Received Redis message: ");
+        for (int i = 0; i < argv.size(); i++)
+        {
+            printf("%s ", argv[i].c_str());
+        }
+        printf("\n");
+    */
     return rondb_redis_handler(argv, response, _worker_id);
 }
 

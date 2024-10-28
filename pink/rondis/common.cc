@@ -21,7 +21,7 @@ int execute_no_commit(NdbTransaction *trans, int &ret_code, bool allow_fail)
 
 int execute_commit(Ndb *ndb, NdbTransaction *trans, int &ret_code)
 {
-    printf("Execute transaction\n");
+    // printf("Execute transaction\n");
     if (trans->execute(NdbTransaction::Commit) != 0)
     {
         ret_code = trans->getNdbError().code;

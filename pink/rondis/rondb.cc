@@ -123,7 +123,12 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
         }
         else
         {
-            printf("Unsupported command\n");
+            printf("Unsupported command: ");
+            for (const auto &arg : argv)
+            {
+                printf("%s ", arg.c_str());
+            }
+            printf("\n");
             return -1;
         }
     }

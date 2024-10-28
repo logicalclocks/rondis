@@ -295,9 +295,11 @@ int get_simple_key_row(std::string *response,
     response->append(buf);
     response->append((const char *)&key_row->value_start[2], key_row->tot_value_len);
     response->append("\r\n");
-    printf("Respond with tot_value_len: %u, string: %s\n",
+    /*
+        printf("Respond with tot_value_len: %u, string: %s\n",
            key_row->tot_value_len,
            (const char *)&key_row->value_start[2], key_row->tot_value_len);
+    */
     ndb->closeTransaction(trans);
     return 0;
 }
