@@ -24,6 +24,7 @@ function set_and_get() {
         echo "Got: $result"
         exit 1
     fi
+    echo
 }
 
 # Test Cases
