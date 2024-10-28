@@ -42,6 +42,9 @@ EOF
 
 # Test Cases
 
+echo "Testing ping..."
+redis-cli ping && echo
+
 echo "Testing empty string..."
 set_and_get "$KEY:empty" ""
 
