@@ -31,7 +31,7 @@ void rondb_get_command(Ndb *ndb,
     Uint32 key_len = argv[1].size();
     if (key_len > MAX_KEY_VALUE_LEN)
     {
-        failed_large_key(response);
+        assign_generic_err_to_response(response, REDIS_KEY_TOO_LARGE);
         return;
     }
 
@@ -82,7 +82,7 @@ void rondb_set_command(
     Uint32 key_len = argv[1].size();
     if (key_len > MAX_KEY_VALUE_LEN)
     {
-        failed_large_key(response);
+        assign_generic_err_to_response(response, REDIS_KEY_TOO_LARGE);
         return;
     }
 

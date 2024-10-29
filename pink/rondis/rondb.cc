@@ -96,7 +96,7 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
         if (argv.size() != 1)
         {
             char error_message[256];
-            snprintf(error_message, sizeof(error_message), WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+            snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
             std::cout << error_message << std::endl;
             assign_generic_err_to_response(response, error_message);
             return 0;
@@ -115,7 +115,7 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
             else
             {
                 char error_message[256];
-                snprintf(error_message, sizeof(error_message), WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
                 assign_generic_err_to_response(response, error_message);
             }
         }
@@ -128,7 +128,7 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
             else
             {
                 char error_message[256];
-                snprintf(error_message, sizeof(error_message), WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
                 assign_generic_err_to_response(response, error_message);
             }
         }
@@ -142,7 +142,7 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
             printf("\n");
 
             char error_message[256];
-            snprintf(error_message, sizeof(error_message), UNKNOWN_COMMAND, argv[0].c_str());
+            snprintf(error_message, sizeof(error_message), REDIS_UNKNOWN_COMMAND, argv[0].c_str());
             assign_generic_err_to_response(response, error_message);
         }
     }

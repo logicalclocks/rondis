@@ -288,7 +288,7 @@ int get_simple_key_row(std::string *response,
     {
         if (read_op->getNdbError().status == NdbError::NoDataFound)
         {
-            failed_no_such_row_error(response);
+            response->assign(REDIS_NO_SUCH_KEY);
             return READ_ERROR;
         }
         int ret_code = read_op->getNdbError().code;

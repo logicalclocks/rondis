@@ -76,19 +76,3 @@ void assign_generic_err_to_response(
     printf("%s", buf);
     response->assign(buf);
 }
-
-/*
-    Generic Errors
-*/
-
-void failed_no_such_row_error(std::string *response)
-{
-    // Redis stuff
-    response->assign("$-1\r\n");
-}
-
-void failed_large_key(std::string *response)
-{
-    assign_generic_err_to_response(response,
-                                   "Support up to 3000 bytes long keys");
-}

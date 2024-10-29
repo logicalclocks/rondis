@@ -26,9 +26,7 @@ void assign_generic_err_to_response(std::string *response,const char *app_str);
 #define FAILED_DEFINE_OP "Failed to define RonDB operation"
 
 // Redis errors
-#define UNKNOWN_COMMAND "unknown command '%s'"
-#define WRONG_NUMBER_OF_ARGS "wrong number of arguments for '%s' command"
-
-// Generic errors
-void failed_no_such_row_error(std::string *response);
-void failed_large_key(std::string *response);
+#define REDIS_UNKNOWN_COMMAND "unknown command '%s'"
+#define REDIS_WRONG_NUMBER_OF_ARGS "wrong number of arguments for '%s' command"
+#define REDIS_NO_SUCH_KEY "$-1\r\n"
+#define REDIS_KEY_TOO_LARGE "key is too large (3000 bytes max)"
