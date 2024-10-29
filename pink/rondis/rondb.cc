@@ -95,31 +95,42 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
     {
         if (argv.size() != 1)
         {
-            printf("Invalid number of arguments for ping command\n");
-            return -1;
+            char error_message[256];
+            snprintf(error_message, sizeof(error_message), WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+            std::cout << error_message << std::endl;
+            assign_generic_err_to_response(response, error_message);
+            return 0;
         }
-        response->append("+OK\r\n");
+        response->append("+PONG\r\n");
     }
     else
     {
         Ndb *ndb = ndb_objects[worker_id];
         if (argv[0] == "GET")
         {
-            if (argv.size() != 2)
+            if (argv.size() == 2)
             {
-                printf("Invalid number of arguments for GET command\n");
-                return -1;
+                rondb_get_command(ndb, argv, response);
             }
-            rondb_get_command(ndb, argv, response);
+            else
+            {
+                char error_message[256];
+                snprintf(error_message, sizeof(error_message), WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                assign_generic_err_to_response(response, error_message);
+            }
         }
         else if (argv[0] == "SET")
         {
-            if (argv.size() != 3)
+            if (argv.size() == 3)
             {
-                printf("Invalid number of arguments for SET command\n");
-                return -1;
+                rondb_set_command(ndb, argv, response);
             }
-            rondb_set_command(ndb, argv, response);
+            else
+            {
+                char error_message[256];
+                snprintf(error_message, sizeof(error_message), WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                assign_generic_err_to_response(response, error_message);
+            }
         }
         else
         {
@@ -129,7 +140,10 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                 printf("%s ", arg.c_str());
             }
             printf("\n");
-            return -1;
+
+            char error_message[256];
+            snprintf(error_message, sizeof(error_message), UNKNOWN_COMMAND, argv[0].c_str());
+            assign_generic_err_to_response(response, error_message);
         }
     }
     return 0;
