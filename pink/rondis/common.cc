@@ -7,7 +7,6 @@
 
 #define FOREIGN_KEY_RESTRICT_ERROR 256
 
-
 int execute_no_commit(NdbTransaction *trans, int &ret_code, bool allow_fail)
 {
     printf("Execute NoCommit\n");
@@ -31,6 +30,22 @@ int execute_commit(Ndb *ndb, NdbTransaction *trans, int &ret_code)
     return 0;
 }
 
+/**
+ * @brief Writes formatted data to a buffer.
+ *
+ * This function writes formatted data to the provided buffer using a format string
+ * and a variable number of arguments, similar to printf. It ensures that the
+ * formatted string does not exceed the specified buffer size.
+ *
+ * @param buffer A pointer to the buffer where the formatted string will be written.
+ * @param bufferSize The size of the buffer.
+ * @param format A format string that specifies how subsequent arguments are converted for output.
+ * @param ... Additional arguments specifying the data to be formatted.
+ * @return The number of characters written, excluding the null terminator. If the output
+ *         is truncated due to the buffer size limit, the return value is the number of
+ *         characters (excluding the null terminator) which would have been written if
+ *         enough space had been available.
+ */
 int write_formatted(char *buffer, int bufferSize, const char *format, ...)
 {
     int len = 0;
@@ -41,70 +56,39 @@ int write_formatted(char *buffer, int bufferSize, const char *format, ...)
     return len;
 }
 
-void append_response(std::string *response, const char *app_str, Uint32 error_code)
+void assign_ndb_err_to_response(
+    std::string *response,
+    const char *app_str,
+    Uint32 error_code)
 {
     char buf[512];
-    printf("Add %s to response, error: %u\n", app_str, error_code);
-    if (error_code == 0)
-    {
-        write_formatted(buf, sizeof(buf), "-%s\r\n", app_str);
-        response->append(app_str);
-    }
-    else
-    {
-        write_formatted(buf, sizeof(buf), "-%s: %u\r\n", app_str, error_code);
-        response->append(app_str);
-    }
+    write_formatted(buf, sizeof(buf), "-ERR NDB(%u) %s\r\n", error_code, app_str);
+    printf("%s", buf);
+    response->assign(buf);
 }
+
+void assign_generic_err_to_response(
+    std::string *response,
+    const char *app_str)
+{
+    char buf[512];
+    write_formatted(buf, sizeof(buf), "-ERR %s\r\n", app_str);
+    printf("%s", buf);
+    response->assign(buf);
+}
+
+/*
+    Generic Errors
+*/
 
 void failed_no_such_row_error(std::string *response)
 {
     // Redis stuff
-    response->append("$-1\r\n");
-}
-
-void failed_read_error(std::string *response, Uint32 error_code)
-{
-    append_response(response,
-                    "RonDB Error: Failed to read key, code:",
-                    error_code);
-}
-
-void failed_create_table(std::string *response, Uint32 error_code)
-{
-    append_response(response,
-                    "RonDB Error: Failed to create table object",
-                    error_code);
-}
-
-void failed_create_transaction(std::string *response,
-                               Uint32 error_code)
-{
-    append_response(response,
-                    "RonDB Error: Failed to create transaction object",
-                    error_code);
-}
-
-void failed_execute(std::string *response, Uint32 error_code)
-{
-    append_response(response,
-                    "RonDB Error: Failed to execute transaction, code:",
-                    error_code);
-}
-
-void failed_get_operation(std::string *response)
-{
-    response->append("-RonDB Error: Failed to get NdbOperation object\r\n");
-}
-
-void failed_define(std::string *response, Uint32 error_code)
-{
-    append_response(response,
-                    "RonDB Error: Failed to define RonDB operation, code:",
-                    error_code);
+    response->assign("$-1\r\n");
 }
 
 void failed_large_key(std::string *response)
 {
-    response->append("-RonDB Error: Support up to 3000 bytes long keys\r\n");
+    assign_generic_err_to_response(response,
+                                   "Support up to 3000 bytes long keys");
 }

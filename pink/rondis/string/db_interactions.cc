@@ -30,8 +30,10 @@ int create_key_row(std::string *response,
     NdbOperation *write_op = trans->getNdbOperation(tab);
     if (write_op == nullptr)
     {
+        assign_ndb_err_to_response(response,
+                                   FAILED_GET_OP,
+                                   trans->getNdbError().code);
         ndb->closeTransaction(trans);
-        failed_get_operation(response);
         return -1;
     }
     write_op->writeTuple();
@@ -67,7 +69,9 @@ int create_key_row(std::string *response,
         if (ret_code != 0)
         {
             ndb->closeTransaction(trans);
-            failed_define(response, ret_code);
+            assign_ndb_err_to_response(response,
+                                       FAILED_DEFINE_OP,
+                                       ret_code);
             return -1;
         }
     }
@@ -83,7 +87,9 @@ int create_key_row(std::string *response,
         if (write_op_error != FOREIGN_KEY_RESTRICT_ERROR)
         {
             ndb->closeTransaction(trans);
-            failed_execute(response, ret_code);
+            assign_ndb_err_to_response(response,
+                                       FAILED_EXEC_TXN,
+                                       ret_code);
             return -1;
         }
     }
@@ -104,7 +110,9 @@ int create_key_row(std::string *response,
         ndb->startTransaction(tab, key_str, key_len);
         if (trans == nullptr)
         {
-            failed_create_transaction(response, ndb->getNdbError().code);
+            assign_ndb_err_to_response(response,
+                                       FAILED_CREATE_TXN_OBJECT,
+                                       ndb->getNdbError().code);
             return -1;
         }
     }
@@ -112,8 +120,10 @@ int create_key_row(std::string *response,
         NdbOperation *del_op = trans->getNdbOperation(tab);
         if (del_op == nullptr)
         {
+            assign_ndb_err_to_response(response,
+                                       FAILED_GET_OP,
+                                       trans->getNdbError().code);
             ndb->closeTransaction(trans);
-            failed_get_operation(response);
             return -1;
         }
         del_op->deleteTuple();
@@ -123,7 +133,9 @@ int create_key_row(std::string *response,
             if (ret_code != 0)
             {
                 ndb->closeTransaction(trans);
-                failed_define(response, ret_code);
+                assign_ndb_err_to_response(response,
+                                           FAILED_DEFINE_OP,
+                                           ret_code);
                 return -1;
             }
         }
@@ -133,7 +145,9 @@ int create_key_row(std::string *response,
         if (execute_no_commit(trans, ret_code, false) == -1)
         {
             ndb->closeTransaction(trans);
-            failed_execute(response, ret_code);
+            assign_ndb_err_to_response(response,
+                                       FAILED_EXEC_TXN,
+                                       ret_code);
             return -1;
         }
     }
@@ -141,8 +155,10 @@ int create_key_row(std::string *response,
         NdbOperation *insert_op = trans->getNdbOperation(tab);
         if (insert_op == nullptr)
         {
+            assign_ndb_err_to_response(response,
+                                       FAILED_GET_OP,
+                                       trans->getNdbError().code);
             ndb->closeTransaction(trans);
-            failed_get_operation(response);
             return -1;
         }
         insert_op->insertTuple();
@@ -156,7 +172,9 @@ int create_key_row(std::string *response,
             if (ret_code != 0)
             {
                 ndb->closeTransaction(trans);
-                failed_define(response, ret_code);
+                assign_ndb_err_to_response(response,
+                                           FAILED_DEFINE_OP,
+                                           ret_code);
                 return -1;
             }
         }
@@ -168,7 +186,9 @@ int create_key_row(std::string *response,
             return 0;
         }
         ndb->closeTransaction(trans);
-        failed_execute(response, ret_code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_EXEC_TXN,
+                                   ret_code);
         return -1;
     }
 }
@@ -186,15 +206,19 @@ int create_value_row(std::string *response,
     const NdbDictionary::Table *tab = dict->getTable(VALUE_TABLE_NAME);
     if (tab == nullptr)
     {
-        failed_create_table(response, ndb->getNdbError().code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_CREATE_TABLE_OBJECT,
+                                   ndb->getNdbError().code);
         ndb->closeTransaction(trans);
         return -1;
     }
     NdbOperation *op = trans->getNdbOperation(tab);
     if (op == nullptr)
     {
+        assign_ndb_err_to_response(response,
+                                   FAILED_GET_OP,
+                                   trans->getNdbError().code);
         ndb->closeTransaction(trans);
-        failed_get_operation(response);
         return -1;
     }
     op->insertTuple();
@@ -209,7 +233,9 @@ int create_value_row(std::string *response,
         if (ret_code != 0)
         {
             ndb->closeTransaction(trans);
-            failed_define(response, ret_code);
+            assign_ndb_err_to_response(response,
+                                       FAILED_DEFINE_OP,
+                                       ret_code);
             return -1;
         }
     }
@@ -229,7 +255,9 @@ int get_simple_key_row(std::string *response,
                                                   key_len + 2);
     if (trans == nullptr)
     {
-        failed_create_transaction(response, ndb->getNdbError().code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_CREATE_TXN_OBJECT,
+                                   ndb->getNdbError().code);
         return RONDB_INTERNAL_ERROR;
     }
     /**
@@ -248,37 +276,25 @@ int get_simple_key_row(std::string *response,
         mask_ptr);
     if (read_op == nullptr)
     {
+        assign_ndb_err_to_response(response,
+                                   FAILED_GET_OP,
+                                   trans->getNdbError().code);
         ndb->closeTransaction(trans);
-        failed_get_operation(response);
         return RONDB_INTERNAL_ERROR;
     }
     if (trans->execute(NdbTransaction::Commit,
                        NdbOperation::AbortOnError) != 0 ||
         read_op->getNdbError().code != 0)
     {
-        /*
-            // TODO: Replace hard-coded error numbers with generic error handling
-            //     The NDB API does not supply these error codes itself so it would be guess-work
-
-            NdbError::Status status = read_op->getNdbError().status;
-            if (status == NdbError::Success)
-            {
-                return 0;
-            }
-            else if (status == NdbError::PermanentError)
-            {
-                failed_no_such_row_error(response);
-                return READ_ERROR;
-            }
-        */
-
-        int ret_code = read_op->getNdbError().code;
-        if (ret_code == READ_ERROR)
+        if (read_op->getNdbError().status == NdbError::NoDataFound)
         {
             failed_no_such_row_error(response);
             return READ_ERROR;
         }
-        failed_read_error(response, ret_code);
+        int ret_code = read_op->getNdbError().code;
+        assign_ndb_err_to_response(response,
+                                   FAILED_READ_KEY,
+                                   ret_code);
         return RONDB_INTERNAL_ERROR;
     }
 
@@ -315,9 +331,10 @@ int get_value_rows(std::string *response,
     const NdbDictionary::Table *tab = dict->getTable(VALUE_TABLE_NAME);
     if (tab == nullptr)
     {
-        failed_create_table(response, ndb->getNdbError().code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_CREATE_TABLE_OBJECT,
+                                   ndb->getNdbError().code);
         ndb->closeTransaction(trans);
-        response->clear();
         return -1;
     }
 
@@ -346,9 +363,10 @@ int get_value_rows(std::string *response,
             NdbOperation::LM_CommittedRead);
         if (read_op == nullptr)
         {
+            assign_ndb_err_to_response(response,
+                                       FAILED_GET_OP,
+                                       trans->getNdbError().code);
             ndb->closeTransaction(trans);
-            response->clear();
-            failed_get_operation(response);
             return RONDB_INTERNAL_ERROR;
         }
 
@@ -356,8 +374,9 @@ int get_value_rows(std::string *response,
         if (trans->execute(commit_type,
                            NdbOperation::AbortOnError) != 0)
         {
-            response->clear();
-            failed_read_error(response, trans->getNdbError().code);
+            assign_ndb_err_to_response(response,
+                                       FAILED_READ_KEY,
+                                       trans->getNdbError().code);
             ndb->closeTransaction(trans);
             return RONDB_INTERNAL_ERROR;
         }
@@ -390,7 +409,9 @@ int get_complex_key_row(std::string *response,
                                                   key_len + 2);
     if (trans == nullptr)
     {
-        failed_create_transaction(response, ndb->getNdbError().code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_CREATE_TXN_OBJECT,
+                                   ndb->getNdbError().code);
         return RONDB_INTERNAL_ERROR;
     }
     /**
@@ -409,15 +430,18 @@ int get_complex_key_row(std::string *response,
         mask_ptr);
     if (read_op == nullptr)
     {
+        assign_ndb_err_to_response(response,
+                                   FAILED_GET_OP,
+                                   trans->getNdbError().code);
         ndb->closeTransaction(trans);
-        failed_get_operation(response);
         return RONDB_INTERNAL_ERROR;
     }
     if (trans->execute(NdbTransaction::NoCommit,
                        NdbOperation::AbortOnError) != 0)
     {
-        failed_read_error(response,
-                          trans->getNdbError().code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_READ_KEY,
+                                   trans->getNdbError().code);
         return RONDB_INTERNAL_ERROR;
     }
 
@@ -463,18 +487,18 @@ int rondb_get_key_id(const NdbDictionary::Table *tab,
         {
             if (ndb->setAutoIncrementValue(tab, Uint64(1), false) != 0)
             {
-                append_response(response,
-                                "RonDB Error: Failed to create autoincrement value: ",
-                                ndb->getNdbError().code);
+                assign_ndb_err_to_response(response,
+                                           "Failed to create autoincrement value",
+                                           ndb->getNdbError().code);
                 return -1;
             }
             key_id = Uint64(1);
         }
         else
         {
-            append_response(response,
-                            "RonDB Error: Failed to get autoincrement value: ",
-                            ndb->getNdbError().code);
+            assign_ndb_err_to_response(response,
+                                       "Failed to get autoincrement value",
+                                       ndb->getNdbError().code);
             return -1;
         }
     }

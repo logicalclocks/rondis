@@ -13,12 +13,17 @@
 int execute_no_commit(NdbTransaction *trans, int &ret_code, bool allow_fail);
 int execute_commit(Ndb *ndb, NdbTransaction *trans, int &ret_code);
 int write_formatted(char *buffer, int bufferSize, const char *format, ...);
-void append_response(std::string *response, const char *app_str, Uint32 error_code);
+void assign_ndb_err_to_response(std::string *response, const char *app_str, Uint32 error_code);
+
+// NDB API error messages
+#define FAILED_GET_DICT "Failed to get NdbDict"
+#define FAILED_CREATE_TABLE_OBJECT "Failed to create table object"
+#define FAILED_CREATE_TXN_OBJECT "Failed to create transaction object"
+#define FAILED_EXEC_TXN "Failed to execute transaction"
+#define FAILED_READ_KEY "Failed to read key"
+#define FAILED_GET_OP "Failed to get NdbOperation object"
+#define FAILED_DEFINE_OP "Failed to define RonDB operation"
+
+// Generic errors
 void failed_no_such_row_error(std::string *response);
-void failed_read_error(std::string *response, Uint32 error_code);
-void failed_create_table(std::string *response, Uint32 error_code);
-void failed_create_transaction(std::string *response, Uint32 error_code);
-void failed_execute(std::string *response, Uint32 error_code);
-void failed_get_operation(std::string *response);
-void failed_define(std::string *response, Uint32 error_code);
 void failed_large_key(std::string *response);

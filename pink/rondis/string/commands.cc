@@ -39,7 +39,9 @@ void rondb_get_command(Ndb *ndb,
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
     {
-        failed_create_table(response, dict->getNdbError().code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_CREATE_TABLE_OBJECT,
+                                   dict->getNdbError().code);
         return;
     }
 
@@ -91,22 +93,26 @@ void rondb_set_command(
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
     if (dict == nullptr)
     {
-        append_response(response,
-                        "RonDB Error: Failed to get Ndb dictionary:",
-                        dict->getNdbError().code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_GET_DICT,
+                                   dict->getNdbError().code);
         return;
     }
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
     {
-        failed_create_table(response, dict->getNdbError().code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_CREATE_TABLE_OBJECT,
+                                   dict->getNdbError().code);
         return;
     }
 
     NdbTransaction *trans = ndb->startTransaction(tab, key_str, key_len);
     if (trans == nullptr)
     {
-        failed_create_transaction(response, ndb->getNdbError().code);
+        assign_ndb_err_to_response(response,
+                                   FAILED_CREATE_TXN_OBJECT,
+                                   ndb->getNdbError().code);
         return;
     }
     char varsize_param[EXTENSION_VALUE_LEN + 500];
@@ -156,7 +162,9 @@ void rondb_set_command(
             {
                 if (execute_no_commit(trans, ret_code, false) != 0)
                 {
-                    failed_execute(response, ret_code);
+                    assign_ndb_err_to_response(response,
+                                               FAILED_EXEC_TXN,
+                                               ret_code);
                     return;
                 }
             }
