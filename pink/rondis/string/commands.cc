@@ -78,6 +78,7 @@ void rondb_get_command(Ndb *ndb,
     {
         return;
     }
+    printf("Getting %d value rows\n", key_row.num_rows);
     {
         // For some reason this needs to be used from scratch
         struct key_table key_row;
@@ -234,6 +235,7 @@ void rondb_set_command(
         response->append("+OK\r\n");
         return;
     }
+    printf("Inserting %d value rows\n", num_value_rows);
 
     Uint32 remaining_len = value_len - INLINE_VALUE_LEN;
     const char *start_value_ptr = &value_str[INLINE_VALUE_LEN];
