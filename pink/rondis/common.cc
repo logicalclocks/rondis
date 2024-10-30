@@ -38,7 +38,7 @@ void assign_ndb_err_to_response(
 {
     char buf[512];
     write_formatted(buf, sizeof(buf), "-ERR %s; NDB(%u) %s\r\n", app_str, error.code, error.message);
-    printf("%s", buf);
+    std::cout << buf;
     response->assign(buf);
 }
 
@@ -48,6 +48,6 @@ void assign_generic_err_to_response(
 {
     char buf[512];
     write_formatted(buf, sizeof(buf), "-ERR %s\r\n", app_str);
-    printf("%s", buf);
+    std::cout << buf;
     response->assign(buf);
 }

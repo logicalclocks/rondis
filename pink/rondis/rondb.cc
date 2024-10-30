@@ -97,7 +97,6 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
         {
             char error_message[256];
             snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
-            std::cout << error_message << std::endl;
             assign_generic_err_to_response(response, error_message);
             return 0;
         }
