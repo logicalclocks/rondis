@@ -230,6 +230,7 @@ void rondb_set_command(
 
     if (num_value_rows == 0)
     {
+        ndb->closeTransaction(trans);
         response->append("+OK\r\n");
         return;
     }
