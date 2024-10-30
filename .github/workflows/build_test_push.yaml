@@ -80,13 +80,23 @@ jobs:
       - name: Run Rondis
         run: |
           docker exec -i $CONTAINER_NAME bash -c \
-            "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib && pink/rondis/rondis 6379 mgmd_1:1186 2 &"
+            "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib && pink/rondis/rondis 6379 mgmd_1:1186 2" &
+          echo "$!" > /tmp/rondis.pid
+          sleep 3
 
       # Running this multiple times to check for memory leaks and that overwrites/updates/deletes work
       - name: Run tests multiple times
         run: |
+          set +e
           for i in {1..100}; do
             docker exec -i $CONTAINER_NAME bash -c "pink/rondis/tests/get_set.sh $((i % 2))"
+            if [ $? -ne 0 ]; then
+              echo "Failed in run $i"
+              DOCKER_EXEC_PID=$(cat /tmp/rondis.pid)
+              cat /proc/$DOCKER_EXEC_PID/fd/1 >> stdout.log &
+              cat /proc/$DOCKER_EXEC_PID/fd/2 >> stderr.log &
+              sleep 2 && exit 1
+            fi
             echo "Success in run $i"
           done
 
