@@ -86,7 +86,7 @@ jobs:
       - name: Run tests multiple times
         run: |
           for i in {1..100}; do
-            docker exec -i $CONTAINER_NAME bash -c "pink/rondis/tests/get_set.sh"
+            docker exec -i $CONTAINER_NAME bash -c "pink/rondis/tests/get_set.sh $((i % 2))"
             echo "Success in run $i"
           done
 

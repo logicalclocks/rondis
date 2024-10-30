@@ -2,7 +2,9 @@
 
 set -e
 
-KEY="test_key"
+# Change key suffix using script arguments
+KEY_SUFFIX=${1:-0}
+KEY="test_key_$KEY_SUFFIX"
 
 # Function to set a value and retrieve it, then verify if it matches
 function set_and_get() {
