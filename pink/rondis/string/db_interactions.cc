@@ -201,7 +201,6 @@ int insert_key_row(std::string *response,
              (execute_commit(ndb, trans, ret_code) == 0)) ||
             (execute_no_commit(trans, ret_code, false) == 0))
         {
-            printf("Executed key txn to INSERT key\n");
             return 0;
         }
         assign_ndb_err_to_response(response,
