@@ -55,8 +55,9 @@ echo "Testing medium string (100 characters)..."
 medium_value=$(head -c 100 < /dev/zero | tr '\0' 'a')
 set_and_get "$KEY:medium" "$medium_value"
 
-echo "Testing large string (50,000 characters)..."
-large_value=$(head -c 50000 < /dev/zero | tr '\0' 'a')
+# Minimal amount to create value rows
+echo "Testing large string (30,000 characters)..."
+large_value=$(head -c 30000 < /dev/zero | tr '\0' 'a')
 set_and_get "$KEY:large" "$large_value"
 
 # Too large values seem to fail due to the network buffer size
