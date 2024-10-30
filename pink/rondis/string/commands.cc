@@ -5,7 +5,7 @@
 #include <ndbapi/NdbApi.hpp>
 #include <ndbapi/Ndb.hpp>
 
-#include "db_interactions.h"
+#include "db_operations.h"
 #include "../common.h"
 #include "table_definitions.h"
 

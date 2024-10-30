@@ -6,7 +6,7 @@
 #include <ndbapi/Ndb.hpp>
 
 #include "../common.h"
-#include "db_interactions.h"
+#include "db_operations.h"
 #include "table_definitions.h"
 
 NdbRecord *pk_key_record = nullptr;
