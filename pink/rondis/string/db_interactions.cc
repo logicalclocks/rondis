@@ -6,6 +6,7 @@
 #include <ndbapi/Ndb.hpp>
 
 #include "../common.h"
+#include "db_interactions.h"
 #include "table_definitions.h"
 
 NdbRecord *pk_key_record = nullptr;
@@ -17,12 +18,11 @@ int create_key_row(std::string *response,
                    Ndb *ndb,
                    const NdbDictionary::Table *tab,
                    NdbTransaction *trans,
-                   Uint64 key_id,
+                   Uint64 rondb_key,
                    const char *key_str,
                    Uint32 key_len,
                    const char *value_str,
-                   Uint32 value_len,
-                   Uint32 field_rows,
+                   Uint32 tot_value_len,
                    Uint32 num_value_rows,
                    Uint32 row_state,
                    char *buf)
@@ -33,42 +33,22 @@ int create_key_row(std::string *response,
         assign_ndb_err_to_response(response,
                                    FAILED_GET_OP,
                                    trans->getNdbError().code);
-        ndb->closeTransaction(trans);
         return -1;
     }
     write_op->writeTuple();
-
-    memcpy(&buf[2], key_str, key_len);
-    buf[0] = key_len & 255;
-    buf[1] = key_len >> 8;
-    write_op->equal(KEY_TABLE_COL_redis_key, buf);
-
-    if (key_id == 0)
-    {
-        write_op->setValue(KEY_TABLE_COL_rondb_key, (char *)NULL);
-    }
-    else
-    {
-        write_op->setValue(KEY_TABLE_COL_rondb_key, key_id);
-    }
-    write_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
-    write_op->setValue(KEY_TABLE_COL_num_rows, num_value_rows);
-    write_op->setValue(KEY_TABLE_COL_value_data_type, row_state);
-    write_op->setValue(KEY_TABLE_COL_expiry_date, 0);
-
-    if (value_len > INLINE_VALUE_LEN)
-    {
-        value_len = INLINE_VALUE_LEN;
-    }
-    memcpy(&buf[2], value_str, value_len);
-    buf[0] = value_len & 255;
-    buf[1] = value_len >> 8;
-    write_op->setValue(KEY_TABLE_COL_value_start, buf);
+    write_data_to_key_op(write_op,
+                         rondb_key,
+                         key_str,
+                         key_len,
+                         value_str,
+                         tot_value_len,
+                         num_value_rows,
+                         row_state,
+                         buf);
     {
         int ret_code = write_op->getNdbError().code;
         if (ret_code != 0)
         {
-            ndb->closeTransaction(trans);
             assign_ndb_err_to_response(response,
                                        FAILED_DEFINE_OP,
                                        ret_code);
@@ -79,78 +59,114 @@ int create_key_row(std::string *response,
         int ret_code = 0;
         if (((num_value_rows == 0) &&
              (execute_commit(ndb, trans, ret_code) == 0)) ||
-            (execute_no_commit(trans, ret_code, true) == 0))
+            (execute_no_commit(trans, ret_code, false) == 0))
         {
             return 0;
         }
-        int write_op_error = write_op->getNdbError().code;
-        if (write_op_error != FOREIGN_KEY_RESTRICT_ERROR)
+
+        if (ret_code != FOREIGN_KEY_RESTRICT_ERROR)
         {
-            ndb->closeTransaction(trans);
             assign_ndb_err_to_response(response,
                                        FAILED_EXEC_TXN,
                                        ret_code);
-            return -1;
         }
+        return ret_code;
     }
-    /**
-     * There is a row that we need to overwrite and this row
-     * also have value rows. Start by deleting the key row,
-     * this will lead to deletion of all value rows as well.
-     *
-     * If new row had no value rows the transaction will already
-     * be aborted and need to restarted again.
-     *
-     * After deleting the key row we are now ready to insert the
-     * key row.
-     */
-    if (num_value_rows == 0)
+}
+
+int delete_and_insert_key_row(std::string *response,
+                              Ndb *ndb,
+                              const NdbDictionary::Table *tab,
+                              NdbTransaction *trans,
+                              Uint64 rondb_key,
+                              const char *key_str,
+                              Uint32 key_len,
+                              const char *value_str,
+                              Uint32 tot_value_len,
+                              Uint32 num_value_rows,
+                              Uint32 row_state,
+                              char *buf)
+{
+    if (delete_key_row(response,
+                       ndb,
+                       tab,
+                       trans,
+                       key_str,
+                       key_len,
+                       buf) != 0)
     {
-        ndb->closeTransaction(trans);
-        ndb->startTransaction(tab, key_str, key_len);
-        if (trans == nullptr)
-        {
-            assign_ndb_err_to_response(response,
-                                       FAILED_CREATE_TXN_OBJECT,
-                                       ndb->getNdbError().code);
-            return -1;
-        }
+        return -1;
     }
+
+    return insert_key_row(response,
+                          ndb,
+                          tab,
+                          trans,
+                          rondb_key,
+                          key_str,
+                          key_len,
+                          value_str,
+                          tot_value_len,
+                          num_value_rows,
+                          row_state,
+                          buf);
+}
+
+int delete_key_row(std::string *response,
+                   Ndb *ndb,
+                   const NdbDictionary::Table *tab,
+                   NdbTransaction *trans,
+                   const char *key_str,
+                   Uint32 key_len,
+                   char *buf)
+{
+    NdbOperation *del_op = trans->getNdbOperation(tab);
+    if (del_op == nullptr)
     {
-        NdbOperation *del_op = trans->getNdbOperation(tab);
-        if (del_op == nullptr)
-        {
-            assign_ndb_err_to_response(response,
-                                       FAILED_GET_OP,
-                                       trans->getNdbError().code);
-            ndb->closeTransaction(trans);
-            return -1;
-        }
-        del_op->deleteTuple();
-        del_op->equal(KEY_TABLE_COL_redis_key, buf);
-        {
-            int ret_code = del_op->getNdbError().code;
-            if (ret_code != 0)
-            {
-                ndb->closeTransaction(trans);
-                assign_ndb_err_to_response(response,
-                                           FAILED_DEFINE_OP,
-                                           ret_code);
-                return -1;
-            }
-        }
+        assign_ndb_err_to_response(response,
+                                   FAILED_GET_OP,
+                                   trans->getNdbError().code);
+        return -1;
+    }
+    del_op->deleteTuple();
+    memcpy(&buf[2], key_str, key_len);
+    buf[0] = key_len & 255;
+    buf[1] = key_len >> 8;
+    del_op->equal(KEY_TABLE_COL_redis_key, buf);
+    int ret_code = del_op->getNdbError().code;
+    if (ret_code != 0)
+    {
+        assign_ndb_err_to_response(response,
+                                   FAILED_DEFINE_OP,
+                                   ret_code);
+        return -1;
     }
     {
         int ret_code = 0;
         if (execute_no_commit(trans, ret_code, false) == -1)
         {
-            ndb->closeTransaction(trans);
             assign_ndb_err_to_response(response,
                                        FAILED_EXEC_TXN,
                                        ret_code);
             return -1;
         }
+        return 0;
     }
+}
+
+int insert_key_row(std::string *response,
+                   Ndb *ndb,
+                   const NdbDictionary::Table *tab,
+                   NdbTransaction *trans,
+                   Uint64 rondb_key,
+                   const char *key_str,
+                   Uint32 key_len,
+                   const char *value_str,
+                   Uint32 tot_value_len,
+                   Uint32 num_value_rows,
+                   Uint32 row_state,
+                   char *buf)
+{
     {
         NdbOperation *insert_op = trans->getNdbOperation(tab);
         if (insert_op == nullptr)
@@ -158,34 +174,36 @@ int create_key_row(std::string *response,
             assign_ndb_err_to_response(response,
                                        FAILED_GET_OP,
                                        trans->getNdbError().code);
-            ndb->closeTransaction(trans);
             return -1;
         }
         insert_op->insertTuple();
-        insert_op->equal(KEY_TABLE_COL_redis_key, buf);
-        insert_op->setValue(KEY_TABLE_COL_tot_value_len, value_len);
-        insert_op->setValue(KEY_TABLE_COL_num_rows, num_value_rows);
-        insert_op->setValue(KEY_TABLE_COL_value_data_type, row_state);
-        insert_op->setValue(KEY_TABLE_COL_expiry_date, 0);
+        write_data_to_key_op(insert_op,
+                             rondb_key,
+                             key_str,
+                             key_len,
+                             value_str,
+                             tot_value_len,
+                             num_value_rows,
+                             row_state,
+                             buf);
+        int ret_code = insert_op->getNdbError().code;
+        if (ret_code != 0)
         {
-            int ret_code = insert_op->getNdbError().code;
-            if (ret_code != 0)
-            {
-                ndb->closeTransaction(trans);
-                assign_ndb_err_to_response(response,
-                                           FAILED_DEFINE_OP,
-                                           ret_code);
-                return -1;
-            }
+            assign_ndb_err_to_response(response,
+                                       FAILED_DEFINE_OP,
+                                       ret_code);
+            return -1;
         }
     }
     {
         int ret_code = 0;
-        if (execute_commit(ndb, trans, ret_code) == 0)
+        if (((num_value_rows == 0) &&
+             (execute_commit(ndb, trans, ret_code) == 0)) ||
+            (execute_no_commit(trans, ret_code, false) == 0))
         {
+            printf("Executed key txn to INSERT key\n");
             return 0;
         }
-        ndb->closeTransaction(trans);
         assign_ndb_err_to_response(response,
                                    FAILED_EXEC_TXN,
                                    ret_code);
@@ -193,12 +211,51 @@ int create_key_row(std::string *response,
     }
 }
 
+void write_data_to_key_op(NdbOperation *ndb_op,
+                          Uint64 rondb_key,
+                          const char *key_str,
+                          Uint32 key_len,
+                          const char *value_str,
+                          Uint32 tot_value_len,
+                          Uint32 num_value_rows,
+                          Uint32 row_state,
+                          char *buf)
+{
+    memcpy(&buf[2], key_str, key_len);
+    buf[0] = key_len & 255;
+    buf[1] = key_len >> 8;
+    ndb_op->equal(KEY_TABLE_COL_redis_key, buf);
+
+    if (rondb_key == 0)
+    {
+        ndb_op->setValue(KEY_TABLE_COL_rondb_key, (char *)NULL);
+    }
+    else
+    {
+        ndb_op->setValue(KEY_TABLE_COL_rondb_key, rondb_key);
+    }
+    ndb_op->setValue(KEY_TABLE_COL_tot_value_len, tot_value_len);
+    ndb_op->setValue(KEY_TABLE_COL_num_rows, num_value_rows);
+    ndb_op->setValue(KEY_TABLE_COL_value_data_type, row_state);
+    ndb_op->setValue(KEY_TABLE_COL_expiry_date, 0);
+
+    Uint32 this_value_len = tot_value_len;
+    if (this_value_len > INLINE_VALUE_LEN)
+    {
+        this_value_len = INLINE_VALUE_LEN;
+    }
+    memcpy(&buf[2], value_str, this_value_len);
+    buf[0] = this_value_len & 255;
+    buf[1] = this_value_len >> 8;
+    ndb_op->setValue(KEY_TABLE_COL_value_start, buf);
+}
+
 int create_value_row(std::string *response,
                      Ndb *ndb,
                      const NdbDictionary::Dictionary *dict,
                      NdbTransaction *trans,
                      const char *start_value_ptr,
-                     Uint64 key_id,
+                     Uint64 rondb_key,
                      Uint32 this_value_len,
                      Uint32 ordinal,
                      char *buf)
@@ -209,7 +266,6 @@ int create_value_row(std::string *response,
         assign_ndb_err_to_response(response,
                                    FAILED_CREATE_TABLE_OBJECT,
                                    ndb->getNdbError().code);
-        ndb->closeTransaction(trans);
         return -1;
     }
     NdbOperation *op = trans->getNdbOperation(tab);
@@ -218,24 +274,20 @@ int create_value_row(std::string *response,
         assign_ndb_err_to_response(response,
                                    FAILED_GET_OP,
                                    trans->getNdbError().code);
-        ndb->closeTransaction(trans);
         return -1;
     }
     op->insertTuple();
-    op->equal(VALUE_TABLE_COL_rondb_key, key_id);
+    op->equal(VALUE_TABLE_COL_rondb_key, rondb_key);
     op->equal(VALUE_TABLE_COL_ordinal, ordinal);
     memcpy(&buf[2], start_value_ptr, this_value_len);
     buf[0] = this_value_len & 255;
     buf[1] = this_value_len >> 8;
-    op->equal(VALUE_TABLE_COL_value, buf);
+    op->setValue(VALUE_TABLE_COL_value, buf);
     {
         int ret_code = op->getNdbError().code;
         if (ret_code != 0)
         {
-            ndb->closeTransaction(trans);
-            assign_ndb_err_to_response(response,
-                                       FAILED_DEFINE_OP,
-                                       ret_code);
+            assign_ndb_err_to_response(response, FAILED_DEFINE_OP, ret_code);
             return -1;
         }
     }
@@ -245,21 +297,10 @@ int create_value_row(std::string *response,
 int get_simple_key_row(std::string *response,
                        const NdbDictionary::Table *tab,
                        Ndb *ndb,
+                       NdbTransaction *trans,
                        struct key_table *key_row,
                        Uint32 key_len)
 {
-    // This is (usually) a local operation to calculate the correct data node, using the
-    // hash of the pk value.
-    NdbTransaction *trans = ndb->startTransaction(tab,
-                                                  &key_row->redis_key[0],
-                                                  key_len + 2);
-    if (trans == nullptr)
-    {
-        assign_ndb_err_to_response(response,
-                                   FAILED_CREATE_TXN_OBJECT,
-                                   ndb->getNdbError().code);
-        return RONDB_INTERNAL_ERROR;
-    }
     /**
      * Mask and options means simply reading all columns
      * except primary key column.
@@ -279,14 +320,13 @@ int get_simple_key_row(std::string *response,
         assign_ndb_err_to_response(response,
                                    FAILED_GET_OP,
                                    trans->getNdbError().code);
-        ndb->closeTransaction(trans);
         return RONDB_INTERNAL_ERROR;
     }
     if (trans->execute(NdbTransaction::Commit,
                        NdbOperation::AbortOnError) != 0 ||
         read_op->getNdbError().code != 0)
     {
-        if (read_op->getNdbError().status == NdbError::NoDataFound)
+        if (read_op->getNdbError().classification == NdbError::NoDataFound)
         {
             response->assign(REDIS_NO_SUCH_KEY);
             return READ_ERROR;
@@ -316,7 +356,6 @@ int get_simple_key_row(std::string *response,
            key_row->tot_value_len,
            (const char *)&key_row->value_start[2], key_row->tot_value_len);
     */
-    ndb->closeTransaction(trans);
     return 0;
 }
 
@@ -325,7 +364,7 @@ int get_value_rows(std::string *response,
                    const NdbDictionary::Dictionary *dict,
                    NdbTransaction *trans,
                    const Uint32 num_rows,
-                   const Uint64 key_id,
+                   const Uint64 rondb_key,
                    const Uint32 tot_value_len)
 {
     const NdbDictionary::Table *tab = dict->getTable(VALUE_TABLE_NAME);
@@ -334,7 +373,6 @@ int get_value_rows(std::string *response,
         assign_ndb_err_to_response(response,
                                    FAILED_CREATE_TABLE_OBJECT,
                                    ndb->getNdbError().code);
-        ndb->closeTransaction(trans);
         return -1;
     }
 
@@ -345,7 +383,7 @@ int get_value_rows(std::string *response,
     for (Uint32 row_index = 0; row_index < num_rows; row_index++)
     {
         int read_index = row_index % ROWS_PER_READ;
-        value_rows[read_index].rondb_key = key_id;
+        value_rows[read_index].rondb_key = rondb_key;
         value_rows[read_index].ordinal = row_index;
 
         bool is_last_row_of_read = (read_index == (ROWS_PER_READ - 1));
@@ -365,8 +403,7 @@ int get_value_rows(std::string *response,
         {
             assign_ndb_err_to_response(response,
                                        FAILED_GET_OP,
-                                       trans->getNdbError().code);
-            ndb->closeTransaction(trans);
+                                       read_op->getNdbError().code);
             return RONDB_INTERNAL_ERROR;
         }
 
@@ -377,11 +414,10 @@ int get_value_rows(std::string *response,
             assign_ndb_err_to_response(response,
                                        FAILED_READ_KEY,
                                        trans->getNdbError().code);
-            ndb->closeTransaction(trans);
             return RONDB_INTERNAL_ERROR;
         }
 
-        for (Uint32 i = 0; i < read_index; i++)
+        for (Uint32 i = 0; i <= read_index; i++)
         {
             // Transfer char pointer to response's string
             Uint32 row_value_len =
@@ -396,6 +432,7 @@ int get_complex_key_row(std::string *response,
                         const NdbDictionary::Dictionary *dict,
                         const NdbDictionary::Table *tab,
                         Ndb *ndb,
+                        NdbTransaction *trans,
                         struct key_table *key_row,
                         Uint32 key_len)
 {
@@ -404,16 +441,6 @@ int get_complex_key_row(std::string *response,
      * the safe method where we first read with lock the key row
      * followed by reading the value rows.
      */
-    NdbTransaction *trans = ndb->startTransaction(tab,
-                                                  &key_row->redis_key[0],
-                                                  key_len + 2);
-    if (trans == nullptr)
-    {
-        assign_ndb_err_to_response(response,
-                                   FAILED_CREATE_TXN_OBJECT,
-                                   ndb->getNdbError().code);
-        return RONDB_INTERNAL_ERROR;
-    }
     /**
      * Mask and options means simply reading all columns
      * except primary key column.
@@ -433,7 +460,6 @@ int get_complex_key_row(std::string *response,
         assign_ndb_err_to_response(response,
                                    FAILED_GET_OP,
                                    trans->getNdbError().code);
-        ndb->closeTransaction(trans);
         return RONDB_INTERNAL_ERROR;
     }
     if (trans->execute(NdbTransaction::NoCommit,
@@ -467,7 +493,6 @@ int get_complex_key_row(std::string *response,
                                   key_row->num_rows,
                                   key_row->rondb_key,
                                   key_row->tot_value_len);
-    ndb->closeTransaction(trans);
     if (ret_code == 0)
     {
         response->append("\r\n");
@@ -476,12 +501,12 @@ int get_complex_key_row(std::string *response,
     return RONDB_INTERNAL_ERROR;
 }
 
-int rondb_get_key_id(const NdbDictionary::Table *tab,
-                     Uint64 &key_id,
-                     Ndb *ndb,
-                     std::string *response)
+int rondb_get_rondb_key(const NdbDictionary::Table *tab,
+                        Uint64 &rondb_key,
+                        Ndb *ndb,
+                        std::string *response)
 {
-    if (ndb->getAutoIncrementValue(tab, key_id, unsigned(1024)) != 0)
+    if (ndb->getAutoIncrementValue(tab, rondb_key, unsigned(1024)) != 0)
     {
         if (ndb->getNdbError().code == 626)
         {
@@ -492,7 +517,7 @@ int rondb_get_key_id(const NdbDictionary::Table *tab,
                                            ndb->getNdbError().code);
                 return -1;
             }
-            key_id = Uint64(1);
+            rondb_key = Uint64(1);
         }
         else
         {

@@ -5,8 +5,6 @@
 
 #include "common.h"
 
-#define FOREIGN_KEY_RESTRICT_ERROR 256
-
 int execute_no_commit(NdbTransaction *trans, int &ret_code, bool allow_fail)
 {
     printf("Execute NoCommit\n");

@@ -27,13 +27,13 @@ void rondb_get_command(Ndb *ndb,
                        const pink::RedisCmdArgsType &argv,
                        std::string *response)
 {
-    const char *key_str = argv[1].c_str();
     Uint32 key_len = argv[1].size();
     if (key_len > MAX_KEY_VALUE_LEN)
     {
         assign_generic_err_to_response(response, REDIS_KEY_TOO_LARGE);
         return;
     }
+    const char *key_str = argv[1].c_str();
 
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
@@ -52,24 +52,66 @@ void rondb_get_command(Ndb *ndb,
     // Length as little endian
     key_row.redis_key[0] = key_len & 255;
     key_row.redis_key[1] = key_len >> 8;
-    int ret_code = get_simple_key_row(response, tab, ndb, &key_row, key_len);
-    if ((ret_code != 0) || (&key_row)->num_rows == 0)
+
+    // This is (usually) a local operation to calculate the correct data node, using the
+    // hash of the pk value.
+    NdbTransaction *trans = ndb->startTransaction(tab,
+                                                  &(key_row.redis_key[0]),
+                                                  key_len + 2);
+    if (trans == nullptr)
+    {
+        assign_ndb_err_to_response(response,
+                                   FAILED_CREATE_TXN_OBJECT,
+                                   ndb->getNdbError().code);
+        return;
+    }
+
+    int ret_code = get_simple_key_row(
+        response,
+        tab,
+        ndb,
+        trans,
+        &key_row,
+        key_len);
+    ndb->closeTransaction(trans);
+    if ((ret_code != 0) || key_row.num_rows == 0)
     {
         return;
     }
-    else
     {
+        // For some reason this needs to be used from scratch
+        struct key_table key_row;
+        // varbinary -> first 2 bytes are length if bigger than 255
+        // start copying from 3rd byte
+        memcpy(&key_row.redis_key[2], key_str, key_len);
+        // Length as little endian
+        key_row.redis_key[0] = key_len & 255;
+        key_row.redis_key[1] = key_len >> 8;
+
         /*
             Our value uses value rows, so a more complex read is required.
             We're starting from scratch here since we'll use a shared lock
             on the key table this time we read from it.
         */
+
+        NdbTransaction *trans = ndb->startTransaction(tab,
+                                                      &(key_row.redis_key[0]),
+                                                      key_len + 2);
+        if (trans == nullptr)
+        {
+            assign_ndb_err_to_response(response,
+                                       FAILED_CREATE_TXN_OBJECT,
+                                       ndb->getNdbError().code);
+            return;
+        }
         get_complex_key_row(response,
                             dict,
                             tab,
                             ndb,
+                            trans,
                             &key_row,
                             key_len);
+        ndb->closeTransaction(trans);
         return;
     }
 }
@@ -93,104 +135,150 @@ void rondb_set_command(
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
     if (dict == nullptr)
     {
-        assign_ndb_err_to_response(response,
-                                   FAILED_GET_DICT,
-                                   dict->getNdbError().code);
+        assign_ndb_err_to_response(response, FAILED_GET_DICT, dict->getNdbError().code);
         return;
     }
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
     {
-        assign_ndb_err_to_response(response,
-                                   FAILED_CREATE_TABLE_OBJECT,
-                                   dict->getNdbError().code);
+        assign_ndb_err_to_response(response, FAILED_CREATE_TABLE_OBJECT, dict->getNdbError().code);
         return;
     }
 
     NdbTransaction *trans = ndb->startTransaction(tab, key_str, key_len);
     if (trans == nullptr)
     {
-        assign_ndb_err_to_response(response,
-                                   FAILED_CREATE_TXN_OBJECT,
-                                   ndb->getNdbError().code);
+        assign_ndb_err_to_response(response, FAILED_CREATE_TXN_OBJECT, ndb->getNdbError().code);
         return;
     }
+
     char varsize_param[EXTENSION_VALUE_LEN + 500];
-    Uint32 value_rows = 0;
-    Uint64 key_id = 0;
+    Uint32 num_value_rows = value_len / EXTENSION_VALUE_LEN;
+    Uint64 rondb_key = 0;
+
     if (value_len > INLINE_VALUE_LEN)
     {
         /**
          * The row doesn't fit in one RonDB row, create more rows
          * in the value_tables table.
          *
-         * We also use the generated key_id which is the foreign
+         * We also use the generated rondb_key which is the foreign
          * key column in the key_table table such that
          * deleting the row in the main table ensures that all
          * value rows are also deleted.
          */
-        int ret_code = rondb_get_key_id(tab, key_id, ndb, response);
-        if (ret_code == -1)
+        if (rondb_get_rondb_key(tab, rondb_key, ndb, response) != 0)
         {
             return;
         }
-        Uint32 remaining_len = value_len - INLINE_VALUE_LEN;
-        const char *start_value_ptr = &value_str[INLINE_VALUE_LEN];
-        do
+    }
+
+    int ret_code = 0;
+    ret_code = create_key_row(response,
+                              ndb,
+                              tab,
+                              trans,
+                              rondb_key,
+                              key_str,
+                              key_len,
+                              value_str,
+                              value_len,
+                              num_value_rows,
+                              Uint32(0),
+                              &varsize_param[0]);
+    if (ret_code != 0)
+    {
+        ndb->closeTransaction(trans);
+        if (ret_code != FOREIGN_KEY_RESTRICT_ERROR)
         {
-            Uint32 this_value_len = remaining_len;
-            if (remaining_len > EXTENSION_VALUE_LEN)
+            return;
+        }
+        else
+        {
+            /*
+                If we are here, we have tried creating a key that already exists.
+                This would not be a problem if this key did not have references
+                to value rows. Hence we first need to delete all of those - this
+                is best done via a cascade delete.
+            */
+
+            /**
+             * There is a row that we need to overwrite and this row
+             * also has value rows. Start by deleting the key row,
+             * this will lead to deletion of all value rows as well.
+             *
+             * If new row had no value rows the transaction will already
+             * be aborted and need to restarted again.
+             *
+             * After deleting the key row we are now ready to insert the
+             * key row.
+             */
+            trans = ndb->startTransaction(tab, key_str, key_len);
+            if (trans == nullptr)
             {
-                this_value_len = EXTENSION_VALUE_LEN;
-            }
-            int ret_code = create_value_row(response,
-                                            ndb,
-                                            dict,
-                                            trans,
-                                            start_value_ptr,
-                                            key_id,
-                                            this_value_len,
-                                            value_rows,
-                                            &varsize_param[0]);
-            if (ret_code == -1)
-            {
+                assign_ndb_err_to_response(response, FAILED_CREATE_TXN_OBJECT, ndb->getNdbError().code);
                 return;
             }
-            remaining_len -= this_value_len;
-            start_value_ptr += this_value_len;
-            if (((value_rows & 1) == 1) || (remaining_len == 0))
+
+            if (delete_and_insert_key_row(response,
+                                          ndb,
+                                          tab,
+                                          trans,
+                                          rondb_key,
+                                          key_str,
+                                          key_len,
+                                          value_str,
+                                          value_len,
+                                          num_value_rows,
+                                          Uint32(0),
+                                          &varsize_param[0]) != 0)
             {
-                if (execute_no_commit(trans, ret_code, false) != 0)
-                {
-                    assign_ndb_err_to_response(response,
-                                               FAILED_EXEC_TXN,
-                                               ret_code);
-                    return;
-                }
+                ndb->closeTransaction(trans);
+                return;
             }
-            value_rows++;
-        } while (remaining_len > 0);
-        value_len = INLINE_VALUE_LEN;
+        }
+    }
+
+    if (num_value_rows == 0)
+    {
+        response->append("+OK\r\n");
+        return;
+    }
+
+    Uint32 remaining_len = value_len - INLINE_VALUE_LEN;
+    const char *start_value_ptr = &value_str[INLINE_VALUE_LEN];
+    for (Uint32 ordinal = 0; ordinal < num_value_rows; ordinal++)
+    {
+        Uint32 this_value_len = remaining_len;
+        if (remaining_len > EXTENSION_VALUE_LEN)
+        {
+            this_value_len = EXTENSION_VALUE_LEN;
+        }
+        if (create_value_row(response,
+                             ndb,
+                             dict,
+                             trans,
+                             start_value_ptr,
+                             rondb_key,
+                             this_value_len,
+                             ordinal,
+                             &varsize_param[0]) != 0)
+        {
+            ndb->closeTransaction(trans);
+            return;
+        }
+        remaining_len -= this_value_len;
+        start_value_ptr += this_value_len;
     }
     {
-        int ret_code = create_key_row(response,
-                                      ndb,
-                                      tab,
-                                      trans,
-                                      key_id,
-                                      key_str,
-                                      key_len,
-                                      value_str,
-                                      value_len,
-                                      Uint32(0),
-                                      value_rows,
-                                      Uint32(0),
-                                      &varsize_param[0]);
-        if (ret_code == -1)
+        int ret_code = 0;
+        if (execute_commit(ndb, trans, ret_code) != 0)
         {
+            assign_ndb_err_to_response(response, FAILED_EXEC_TXN, ret_code);
             return;
         }
     }
+
     response->append("+OK\r\n");
     return;
 }
