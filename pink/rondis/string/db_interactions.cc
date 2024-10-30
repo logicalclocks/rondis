@@ -57,11 +57,14 @@ int create_key_row(std::string *response,
     }
     {
         int ret_code = 0;
-        if (((num_value_rows == 0) &&
-             (execute_commit(ndb, trans, ret_code) == 0)) ||
-            (execute_no_commit(trans, ret_code, false) == 0))
-        {
-            return 0;
+        if (num_value_rows == 0) {
+            if (execute_commit(ndb, trans, ret_code) == 0) {
+                return 0;
+            }
+        } else {
+            if (execute_no_commit(trans, ret_code, false) == 0) {
+                return 0;
+            }
         }
 
         if (ret_code != FOREIGN_KEY_RESTRICT_ERROR)
