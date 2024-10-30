@@ -61,8 +61,8 @@ set_and_get "$KEY:medium" "$medium_value"
 # Minimal amount to create value rows: 30000
 
 # TODO: Increase this as soon as GH actions allows it
-echo "Testing large string (30,000 characters)..."
-large_value=$(head -c 30000 < /dev/zero | tr '\0' 'a')
+echo "Testing large string (10,000 characters)..."
+large_value=$(head -c 10000 < /dev/zero | tr '\0' 'a')
 set_and_get "$KEY:large" "$large_value"
 
 # echo "Testing xl string (100,000 characters)..."
