@@ -196,23 +196,12 @@ void rondb_set_command(
         else
         {
             /*
-                If we are here, we have tried creating a key that already exists.
+                If we are here, we have tried writing a key that already exists.
                 This would not be a problem if this key did not have references
                 to value rows. Hence we first need to delete all of those - this
-                is best done via a cascade delete.
+                is best done via a cascade delete. We do a delete & insert in
+                a single transaction (plus writing the value rows).
             */
-
-            /**
-             * There is a row that we need to overwrite and this row
-             * also has value rows. Start by deleting the key row,
-             * this will lead to deletion of all value rows as well.
-             *
-             * If new row had no value rows the transaction will already
-             * be aborted and need to restarted again.
-             *
-             * After deleting the key row we are now ready to insert the
-             * key row.
-             */
             trans = ndb->startTransaction(tab, key_str, key_len);
             if (trans == nullptr)
             {
