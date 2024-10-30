@@ -77,12 +77,10 @@ jobs:
           COMPOSE_NETWORK=$(docker network list | grep rondb | awk '{print $2}')
           docker network connect $COMPOSE_NETWORK $CONTAINER_NAME
 
-      - name: Run Rondis
+      - name: Run Rondis server
         run: |
           docker exec -i $CONTAINER_NAME bash -c \
-            "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib && pink/rondis/rondis 6379 mgmd_1:1186 2" &
-          echo "$!" > /tmp/rondis.pid
-          sleep 3
+            "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib && pink/rondis/rondis 6379 mgmd_1:1186 2 > /tmp/rondis_server.log 2>&1 &"
 
       # Running this multiple times to check for memory leaks and that overwrites/updates/deletes work
       - name: Run tests multiple times
@@ -91,13 +89,12 @@ jobs:
           for i in {1..100}; do
             docker exec -i $CONTAINER_NAME bash -c "pink/rondis/tests/get_set.sh $((i % 2))"
             if [ $? -ne 0 ]; then
-              echo "Failed in run $i"
-              DOCKER_EXEC_PID=$(cat /tmp/rondis.pid)
-              cat /proc/$DOCKER_EXEC_PID/fd/1 >> stdout.log &
-              cat /proc/$DOCKER_EXEC_PID/fd/2 >> stderr.log &
-              sleep 2 && exit 1
+              echo "Test failed in run $i. Server logs:"
+              docker exec -i $CONTAINER_NAME bash -c "cat /tmp/rondis_server.log"
+              exit 1
+            else
+              echo "Success in run $i"
             fi
-            echo "Success in run $i"
           done
 
       - name: Run Redis benchmark
