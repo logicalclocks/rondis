@@ -57,12 +57,17 @@ int create_key_row(std::string *response,
     }
     {
         int ret_code = 0;
-        if (num_value_rows == 0) {
-            if (execute_commit(ndb, trans, ret_code) == 0) {
+        if (num_value_rows == 0)
+        {
+            if (execute_commit(ndb, trans, ret_code) == 0)
+            {
                 return 0;
             }
-        } else {
-            if (execute_no_commit(trans, ret_code, false) == 0) {
+        }
+        else
+        {
+            if (execute_no_commit(trans, ret_code, false) == 0)
+            {
                 return 0;
             }
         }
@@ -508,26 +513,20 @@ int rondb_get_rondb_key(const NdbDictionary::Table *tab,
                         Ndb *ndb,
                         std::string *response)
 {
-    if (ndb->getAutoIncrementValue(tab, rondb_key, unsigned(1024)) != 0)
+    if (ndb->getAutoIncrementValue(tab, rondb_key, unsigned(1024)) == 0)
     {
-        if (ndb->getNdbError().code == 626)
+        return 0;
+    }
+    if (ndb->getNdbError().code == 626)
+    {
+        if (ndb->setAutoIncrementValue(tab, Uint64(1), false) == 0)
         {
-            if (ndb->setAutoIncrementValue(tab, Uint64(1), false) != 0)
-            {
-                assign_ndb_err_to_response(response,
-                                           "Failed to create autoincrement value",
-                                           ndb->getNdbError().code);
-                return -1;
-            }
             rondb_key = Uint64(1);
-        }
-        else
-        {
-            assign_ndb_err_to_response(response,
-                                       "Failed to get autoincrement value",
-                                       ndb->getNdbError().code);
-            return -1;
+            return 0;
         }
     }
-    return 0;
+    assign_ndb_err_to_response(response,
+                               "Failed to get autoincrement value",
+                               ndb->getNdbError().code);
+    return -1;
 }
