@@ -41,7 +41,7 @@ void rondb_get_command(Ndb *ndb,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_CREATE_TABLE_OBJECT,
-                                   dict->getNdbError().code);
+                                   dict->getNdbError());
         return;
     }
 
@@ -62,7 +62,7 @@ void rondb_get_command(Ndb *ndb,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_CREATE_TXN_OBJECT,
-                                   ndb->getNdbError().code);
+                                   ndb->getNdbError());
         return;
     }
 
@@ -102,7 +102,7 @@ void rondb_get_command(Ndb *ndb,
         {
             assign_ndb_err_to_response(response,
                                        FAILED_CREATE_TXN_OBJECT,
-                                       ndb->getNdbError().code);
+                                       ndb->getNdbError());
             return;
         }
         get_complex_key_row(response,
@@ -136,20 +136,20 @@ void rondb_set_command(
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
     if (dict == nullptr)
     {
-        assign_ndb_err_to_response(response, FAILED_GET_DICT, dict->getNdbError().code);
+        assign_ndb_err_to_response(response, FAILED_GET_DICT, dict->getNdbError());
         return;
     }
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
     if (tab == nullptr)
     {
-        assign_ndb_err_to_response(response, FAILED_CREATE_TABLE_OBJECT, dict->getNdbError().code);
+        assign_ndb_err_to_response(response, FAILED_CREATE_TABLE_OBJECT, dict->getNdbError());
         return;
     }
 
     NdbTransaction *trans = ndb->startTransaction(tab, key_str, key_len);
     if (trans == nullptr)
     {
-        assign_ndb_err_to_response(response, FAILED_CREATE_TXN_OBJECT, ndb->getNdbError().code);
+        assign_ndb_err_to_response(response, FAILED_CREATE_TXN_OBJECT, ndb->getNdbError());
         return;
     }
 
@@ -206,7 +206,7 @@ void rondb_set_command(
             trans = ndb->startTransaction(tab, key_str, key_len);
             if (trans == nullptr)
             {
-                assign_ndb_err_to_response(response, FAILED_CREATE_TXN_OBJECT, ndb->getNdbError().code);
+                assign_ndb_err_to_response(response, FAILED_CREATE_TXN_OBJECT, ndb->getNdbError());
                 return;
             }
 
@@ -262,13 +262,13 @@ void rondb_set_command(
         remaining_len -= this_value_len;
         start_value_ptr += this_value_len;
     }
+
+    if (trans->execute(NdbTransaction::Commit,
+                       NdbOperation::AbortOnError) != 0 ||
+        trans->getNdbError().code != 0)
     {
-        int ret_code = 0;
-        if (execute_commit(ndb, trans, ret_code) != 0)
-        {
-            assign_ndb_err_to_response(response, FAILED_EXEC_TXN, ret_code);
-            return;
-        }
+        assign_ndb_err_to_response(response, FAILED_EXEC_TXN, trans->getNdbError());
+        return;
     }
 
     response->append("+OK\r\n");

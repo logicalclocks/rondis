@@ -32,7 +32,7 @@ int create_key_row(std::string *response,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_GET_OP,
-                                   trans->getNdbError().code);
+                                   trans->getNdbError());
         return -1;
     }
     write_op->writeTuple();
@@ -46,12 +46,11 @@ int create_key_row(std::string *response,
                          row_state,
                          buf);
     {
-        int ret_code = write_op->getNdbError().code;
-        if (ret_code != 0)
+        if (write_op->getNdbError().code != 0)
         {
             assign_ndb_err_to_response(response,
                                        FAILED_DEFINE_OP,
-                                       ret_code);
+                                       write_op->getNdbError());
             return -1;
         }
     }
@@ -59,26 +58,30 @@ int create_key_row(std::string *response,
         int ret_code = 0;
         if (num_value_rows == 0)
         {
-            if (execute_commit(ndb, trans, ret_code) == 0)
+            if (trans->execute(NdbTransaction::Commit,
+                               NdbOperation::AbortOnError) == 0 &&
+                trans->getNdbError().code == 0)
             {
                 return 0;
             }
         }
         else
         {
-            if (execute_no_commit(trans, ret_code, false) == 0)
+            if (trans->execute(NdbTransaction::NoCommit,
+                               NdbOperation::AbortOnError) == 0 &&
+                trans->getNdbError().code == 0)
             {
                 return 0;
             }
         }
 
-        if (ret_code != FOREIGN_KEY_RESTRICT_ERROR)
+        if (trans->getNdbError().code != FOREIGN_KEY_RESTRICT_ERROR)
         {
             assign_ndb_err_to_response(response,
                                        FAILED_EXEC_TXN,
-                                       ret_code);
+                                       trans->getNdbError());
         }
-        return ret_code;
+        return trans->getNdbError().code;
     }
 }
 
@@ -133,7 +136,7 @@ int delete_key_row(std::string *response,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_GET_OP,
-                                   trans->getNdbError().code);
+                                   trans->getNdbError());
         return -1;
     }
     del_op->deleteTuple();
@@ -141,25 +144,25 @@ int delete_key_row(std::string *response,
     buf[0] = key_len & 255;
     buf[1] = key_len >> 8;
     del_op->equal(KEY_TABLE_COL_redis_key, buf);
-    int ret_code = del_op->getNdbError().code;
-    if (ret_code != 0)
+
+    if (del_op->getNdbError().code != 0)
     {
         assign_ndb_err_to_response(response,
                                    FAILED_DEFINE_OP,
-                                   ret_code);
+                                   del_op->getNdbError());
         return -1;
     }
+
+    if (trans->execute(NdbTransaction::NoCommit,
+                       NdbOperation::AbortOnError) != 0 ||
+        trans->getNdbError().code != 0)
     {
-        int ret_code = 0;
-        if (execute_no_commit(trans, ret_code, false) == -1)
-        {
-            assign_ndb_err_to_response(response,
-                                       FAILED_EXEC_TXN,
-                                       ret_code);
-            return -1;
-        }
-        return 0;
+        assign_ndb_err_to_response(response,
+                                   FAILED_EXEC_TXN,
+                                   trans->getNdbError());
+        return -1;
     }
+    return 0;
 }
 
 int insert_key_row(std::string *response,
@@ -181,7 +184,7 @@ int insert_key_row(std::string *response,
         {
             assign_ndb_err_to_response(response,
                                        FAILED_GET_OP,
-                                       trans->getNdbError().code);
+                                       trans->getNdbError());
             return -1;
         }
         insert_op->insertTuple();
@@ -194,26 +197,36 @@ int insert_key_row(std::string *response,
                              num_value_rows,
                              row_state,
                              buf);
-        int ret_code = insert_op->getNdbError().code;
-        if (ret_code != 0)
+        if (insert_op->getNdbError().code != 0)
         {
             assign_ndb_err_to_response(response,
                                        FAILED_DEFINE_OP,
-                                       ret_code);
+                                       insert_op->getNdbError());
             return -1;
         }
     }
     {
-        int ret_code = 0;
-        if (((num_value_rows == 0) &&
-             (execute_commit(ndb, trans, ret_code) == 0)) ||
-            (execute_no_commit(trans, ret_code, false) == 0))
+        if (num_value_rows == 0)
         {
-            return 0;
+            if (trans->execute(NdbTransaction::Commit,
+                               NdbOperation::AbortOnError) == 0 &&
+                trans->getNdbError().code == 0)
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            if (trans->execute(NdbTransaction::NoCommit,
+                               NdbOperation::AbortOnError) == 0 &&
+                trans->getNdbError().code == 0)
+            {
+                return 0;
+            }
         }
         assign_ndb_err_to_response(response,
                                    FAILED_EXEC_TXN,
-                                   ret_code);
+                                   trans->getNdbError());
         return -1;
     }
 }
@@ -272,7 +285,7 @@ int create_value_row(std::string *response,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_CREATE_TABLE_OBJECT,
-                                   ndb->getNdbError().code);
+                                   ndb->getNdbError());
         return -1;
     }
     NdbOperation *op = trans->getNdbOperation(tab);
@@ -280,7 +293,7 @@ int create_value_row(std::string *response,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_GET_OP,
-                                   trans->getNdbError().code);
+                                   trans->getNdbError());
         return -1;
     }
     op->insertTuple();
@@ -292,9 +305,9 @@ int create_value_row(std::string *response,
     op->setValue(VALUE_TABLE_COL_value, buf);
     {
         int ret_code = op->getNdbError().code;
-        if (ret_code != 0)
+        if (op->getNdbError().code != 0)
         {
-            assign_ndb_err_to_response(response, FAILED_DEFINE_OP, ret_code);
+            assign_ndb_err_to_response(response, FAILED_DEFINE_OP, op->getNdbError());
             return -1;
         }
     }
@@ -326,7 +339,7 @@ int get_simple_key_row(std::string *response,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_GET_OP,
-                                   trans->getNdbError().code);
+                                   trans->getNdbError());
         return RONDB_INTERNAL_ERROR;
     }
     if (trans->execute(NdbTransaction::Commit,
@@ -338,10 +351,9 @@ int get_simple_key_row(std::string *response,
             response->assign(REDIS_NO_SUCH_KEY);
             return READ_ERROR;
         }
-        int ret_code = read_op->getNdbError().code;
         assign_ndb_err_to_response(response,
                                    FAILED_READ_KEY,
-                                   ret_code);
+                                   read_op->getNdbError());
         return RONDB_INTERNAL_ERROR;
     }
 
@@ -379,7 +391,7 @@ int get_value_rows(std::string *response,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_CREATE_TABLE_OBJECT,
-                                   ndb->getNdbError().code);
+                                   ndb->getNdbError());
         return -1;
     }
 
@@ -410,7 +422,7 @@ int get_value_rows(std::string *response,
         {
             assign_ndb_err_to_response(response,
                                        FAILED_GET_OP,
-                                       read_op->getNdbError().code);
+                                       read_op->getNdbError());
             return RONDB_INTERNAL_ERROR;
         }
 
@@ -420,7 +432,7 @@ int get_value_rows(std::string *response,
         {
             assign_ndb_err_to_response(response,
                                        FAILED_READ_KEY,
-                                       trans->getNdbError().code);
+                                       trans->getNdbError());
             return RONDB_INTERNAL_ERROR;
         }
 
@@ -466,7 +478,7 @@ int get_complex_key_row(std::string *response,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_GET_OP,
-                                   trans->getNdbError().code);
+                                   trans->getNdbError());
         return RONDB_INTERNAL_ERROR;
     }
     if (trans->execute(NdbTransaction::NoCommit,
@@ -474,7 +486,7 @@ int get_complex_key_row(std::string *response,
     {
         assign_ndb_err_to_response(response,
                                    FAILED_READ_KEY,
-                                   trans->getNdbError().code);
+                                   trans->getNdbError());
         return RONDB_INTERNAL_ERROR;
     }
 
@@ -527,6 +539,6 @@ int rondb_get_rondb_key(const NdbDictionary::Table *tab,
     }
     assign_ndb_err_to_response(response,
                                "Failed to get autoincrement value",
-                               ndb->getNdbError().code);
+                               ndb->getNdbError());
     return -1;
 }

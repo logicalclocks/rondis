@@ -10,11 +10,9 @@
 #define RONDB_INTERNAL_ERROR 2
 #define READ_ERROR 626
 
-int execute_no_commit(NdbTransaction *trans, int &ret_code, bool allow_fail);
-int execute_commit(Ndb *ndb, NdbTransaction *trans, int &ret_code);
 int write_formatted(char *buffer, int bufferSize, const char *format, ...);
-void assign_ndb_err_to_response(std::string *response, const char *app_str, Uint32 error_code);
-void assign_generic_err_to_response(std::string *response,const char *app_str);
+void assign_ndb_err_to_response(std::string *response, const char *app_str, NdbError error);
+void assign_generic_err_to_response(std::string *response, const char *app_str);
 
 // NDB API error messages
 #define FAILED_GET_DICT "Failed to get NdbDict"
