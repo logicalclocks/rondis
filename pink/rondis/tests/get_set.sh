@@ -42,6 +42,12 @@ EOF
     echo
 }
 
+generate_random_chars() {
+    local length=$1
+    head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c $length
+    echo
+}
+
 # Test Cases
 
 echo "Testing ping..."
@@ -54,7 +60,7 @@ echo "Testing small string..."
 set_and_get "$KEY:small" "hello"
 
 echo "Testing medium string (100 characters)..."
-medium_value=$(head -c 100 < /dev/zero | tr '\0' 'a')
+medium_value=$(generate_random_chars 100)
 set_and_get "$KEY:medium" "$medium_value"
 
 # Too large values seem to fail due to the network buffer size
@@ -62,11 +68,11 @@ set_and_get "$KEY:medium" "$medium_value"
 
 # TODO: Increase this as soon as GH actions allows it
 echo "Testing large string (10,000 characters)..."
-large_value=$(head -c 10000 < /dev/zero | tr '\0' 'a')
+large_value=$(generate_random_chars 10000)
 set_and_get "$KEY:large" "$large_value"
 
 # echo "Testing xl string (100,000 characters)..."
-# xl_value=$(head -c 100000 < /dev/zero | tr '\0' 'a')
+# xl_value=$(generate_random_chars 100000)
 # set_and_get "$KEY:xl" "$xl_value"
 
 # echo "Testing xxl string (1,000,000 characters)..."
