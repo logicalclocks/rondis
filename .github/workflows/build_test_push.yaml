@@ -17,6 +17,7 @@ jobs:
       IMAGE_NAME: rondis:latest
       CONTAINER_NAME: rondis
       RONDIS_PORT: 6379
+      DOCKER_WORK_DIR: /usr/src/app
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,8 +49,6 @@ jobs:
           tar xfz /tmp/temp_tarball.tar.gz -C $RONDB_PATH --strip-components=1
         
       - name: Create Rondis environment
-        env:
-          DOCKER_WORK_DIR: /usr/src/app
         run: |
           docker run -d \
             --name=$CONTAINER_NAME \
@@ -79,14 +78,15 @@ jobs:
 
       - name: Run Rondis server
         run: |
-          docker exec -i $CONTAINER_NAME bash -c \
+          docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
             "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib && pink/rondis/rondis 6379 mgmd_1:1186 2 &"
 
       # Running this multiple times to check for memory leaks and that overwrites/updates/deletes work
       - name: Run tests multiple times
         run: |
           for i in {1..100}; do
-            docker exec -i $CONTAINER_NAME bash -c "pink/rondis/tests/get_set.sh $((i % 2))"
+            docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
+              "pink/rondis/tests/get_set.sh $((i % 2))"
             echo "Success in run $i"
           done
 
