@@ -422,7 +422,7 @@ int get_value_rows(std::string *response,
         {
             assign_ndb_err_to_response(response,
                                        FAILED_GET_OP,
-                                       read_op->getNdbError());
+                                       trans->getNdbError());
             return RONDB_INTERNAL_ERROR;
         }
 

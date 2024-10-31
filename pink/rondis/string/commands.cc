@@ -136,7 +136,7 @@ void rondb_set_command(
     const NdbDictionary::Dictionary *dict = ndb->getDictionary();
     if (dict == nullptr)
     {
-        assign_ndb_err_to_response(response, FAILED_GET_DICT, dict->getNdbError());
+        assign_ndb_err_to_response(response, FAILED_GET_DICT, ndb->getNdbError());
         return;
     }
     const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
