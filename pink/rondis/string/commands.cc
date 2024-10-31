@@ -189,6 +189,7 @@ void rondb_set_command(
                               &varsize_param[0]);
     if (ret_code != 0)
     {
+        // Often unnecessary since it already failed to commit
         ndb->closeTransaction(trans);
         if (ret_code != FOREIGN_KEY_RESTRICT_ERROR)
         {
@@ -268,6 +269,7 @@ void rondb_set_command(
         trans->getNdbError().code != 0)
     {
         assign_ndb_err_to_response(response, FAILED_EXEC_TXN, trans->getNdbError());
+        ndb->closeTransaction(trans);
         return;
     }
 
