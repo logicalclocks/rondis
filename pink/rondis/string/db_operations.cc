@@ -304,7 +304,6 @@ int create_value_row(std::string *response,
     buf[1] = this_value_len >> 8;
     op->setValue(VALUE_TABLE_COL_value, buf);
     {
-        int ret_code = op->getNdbError().code;
         if (op->getNdbError().code != 0)
         {
             assign_ndb_err_to_response(response, FAILED_DEFINE_OP, op->getNdbError());
@@ -465,7 +464,8 @@ int get_value_rows(std::string *response,
         bool is_last_row = (row_index == (num_rows - 1));
         NdbTransaction::ExecType commit_type = is_last_row ? NdbTransaction::Commit : NdbTransaction::NoCommit;
         if (trans->execute(commit_type,
-                           NdbOperation::AbortOnError) != 0)
+                           NdbOperation::AbortOnError) != 0 ||
+            trans->getNdbError().code != 0)
         {
             assign_ndb_err_to_response(response,
                                        FAILED_READ_KEY,
@@ -516,7 +516,8 @@ int get_complex_key_row(std::string *response,
         return RONDB_INTERNAL_ERROR;
     }
     if (trans->execute(NdbTransaction::NoCommit,
-                       NdbOperation::AbortOnError) != 0)
+                       NdbOperation::AbortOnError) != 0 ||
+        trans->getNdbError().code != 0)
     {
         assign_ndb_err_to_response(response,
                                    FAILED_READ_KEY,
