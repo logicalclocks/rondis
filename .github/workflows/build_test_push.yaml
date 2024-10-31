@@ -18,6 +18,7 @@ jobs:
       CONTAINER_NAME: rondis
       RONDIS_PORT: 6379
       DOCKER_WORK_DIR: /usr/src/app
+      LOCAL_RONDIS_LOG: /tmp/rondis_server.log
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,8 +79,8 @@ jobs:
 
       - name: Run Rondis server
         run: |
-          docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
-            "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp/rondb/lib && pink/rondis/rondis 6379 mgmd_1:1186 2 &"
+          docker exec -w $DOCKER_WORK_DIR -e LD_LIBRARY_PATH=/tmp/rondb/lib \
+            -t $CONTAINER_NAME pink/rondis/rondis 6379 mgmd_1:1186 2 > $LOCAL_RONDIS_LOG &
 
       # Running this multiple times to check for memory leaks and that overwrites/updates/deletes work
       - name: Run tests multiple times
@@ -89,6 +90,10 @@ jobs:
               "pink/rondis/tests/get_set.sh $((i % 2))"
             echo "Success in run $i"
           done
+
+      - name: Show Rondis logs
+        if: always()
+        run: cat $LOCAL_RONDIS_LOG
 
       - name: Run Redis benchmark
         run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t get,set -c 2"
