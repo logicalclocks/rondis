@@ -86,6 +86,15 @@ void rondb_end()
     ndb_end(0);
 }
 
+void print_args(const pink::RedisCmdArgsType &argv)
+{
+    for (const auto &arg : argv)
+    {
+        printf("%s ", arg.c_str());
+    }
+    printf("\n");
+}
+
 int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                         std::string *response,
                         int worker_id)
@@ -134,15 +143,23 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
         else
         {
             printf("Unsupported command: ");
-            for (const auto &arg : argv)
-            {
-                printf("%s ", arg.c_str());
-            }
-            printf("\n");
-
+            print_args(argv);
             char error_message[256];
             snprintf(error_message, sizeof(error_message), REDIS_UNKNOWN_COMMAND, argv[0].c_str());
             assign_generic_err_to_response(response, error_message);
+        }
+        if (ndb->getClientStat(ndb->TransStartCount) != ndb->getClientStat(ndb->TransCloseCount))
+        {
+            /*
+                If we are here, we have a transaction that was not closed.
+                Only a certain amount of transactions can be open at the same time.
+                If this limit is reached, the Ndb object will not create any new ones.
+                Hence, better to catch these cases early.
+            */
+            print_args(argv);
+            printf("Number of transactions started: %lld\n", ndb->getClientStat(ndb->TransStartCount));
+            printf("Number of transactions closed: %lld\n", ndb->getClientStat(ndb->TransCloseCount));
+            exit(1);
         }
     }
     return 0;
