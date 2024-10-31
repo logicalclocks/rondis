@@ -356,7 +356,7 @@ int create_all_value_rows(std::string *response,
         assign_ndb_err_to_response(response, FAILED_EXEC_TXN, trans->getNdbError());
         return -1;
     }
-    
+
     response->append("+OK\r\n");
     return 0;
 }
@@ -442,22 +442,11 @@ int get_value_rows(std::string *response,
         return -1;
     }
 
-    // Break up fetching large values to avoid blocking the network for other reads
-    const int ROWS_PER_READ = 2;
-    struct value_table value_rows[ROWS_PER_READ];
-
     for (Uint32 row_index = 0; row_index < num_rows; row_index++)
     {
-        int read_index = row_index % ROWS_PER_READ;
-        value_rows[read_index].rondb_key = rondb_key;
-        value_rows[read_index].ordinal = row_index;
-
-        bool is_last_row_of_read = (read_index == (ROWS_PER_READ - 1));
-        bool is_last_row = (row_index == (num_rows - 1));
-        if (!is_last_row_of_read && !is_last_row)
-        {
-            continue;
-        }
+        struct value_table value_rows;
+        value_rows.rondb_key = rondb_key;
+        value_rows.ordinal = row_index;
 
         const NdbOperation *read_op = trans->readTuple(
             pk_value_record,
@@ -473,6 +462,7 @@ int get_value_rows(std::string *response,
             return RONDB_INTERNAL_ERROR;
         }
 
+        bool is_last_row = (row_index == (num_rows - 1));
         NdbTransaction::ExecType commit_type = is_last_row ? NdbTransaction::Commit : NdbTransaction::NoCommit;
         if (trans->execute(commit_type,
                            NdbOperation::AbortOnError) != 0)
@@ -483,13 +473,10 @@ int get_value_rows(std::string *response,
             return RONDB_INTERNAL_ERROR;
         }
 
-        for (Uint32 i = 0; i <= read_index; i++)
-        {
-            // Transfer char pointer to response's string
-            Uint32 row_value_len =
-                value_rows[i].value[0] + (value_rows[i].value[1] << 8);
-            response->append(&value_rows[i].value[2], row_value_len);
-        }
+        // Transfer char pointer to response's string
+        Uint32 row_value_len =
+            value_rows.value[0] + (value_rows.value[1] << 8);
+        response->append(&value_rows.value[2], row_value_len);
     }
     return 0;
 }
