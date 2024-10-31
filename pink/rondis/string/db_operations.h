@@ -72,6 +72,16 @@ int create_value_row(std::string *response,
                      Uint32 ordinal,
                      char *buf);
 
+int create_all_value_rows(std::string *response,
+                          Ndb *ndb,
+                          const NdbDictionary::Dictionary *dict,
+                          NdbTransaction *trans,
+                          Uint64 rondb_key,
+                          const char *value_str,
+                          Uint32 value_len,
+                          Uint32 num_value_rows,
+                          char *buf);
+
 /*
     Since the beginning of the value is saved within the key table, it
     can suffice to read the key table to get the value. If the value is

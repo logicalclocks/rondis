@@ -314,6 +314,53 @@ int create_value_row(std::string *response,
     return 0;
 }
 
+int create_all_value_rows(std::string *response,
+                          Ndb *ndb,
+                          const NdbDictionary::Dictionary *dict,
+                          NdbTransaction *trans,
+                          Uint64 rondb_key,
+                          const char *value_str,
+                          Uint32 value_len,
+                          Uint32 num_value_rows,
+                          char *buf)
+{
+    Uint32 remaining_len = value_len - INLINE_VALUE_LEN;
+    const char *start_value_ptr = &value_str[INLINE_VALUE_LEN];
+    for (Uint32 ordinal = 0; ordinal < num_value_rows; ordinal++)
+    {
+        Uint32 this_value_len = remaining_len;
+        if (remaining_len > EXTENSION_VALUE_LEN)
+        {
+            this_value_len = EXTENSION_VALUE_LEN;
+        }
+        if (create_value_row(response,
+                             ndb,
+                             dict,
+                             trans,
+                             start_value_ptr,
+                             rondb_key,
+                             this_value_len,
+                             ordinal,
+                             buf) != 0)
+        {
+            return -1;
+        }
+        remaining_len -= this_value_len;
+        start_value_ptr += this_value_len;
+    }
+
+    if (trans->execute(NdbTransaction::Commit,
+                       NdbOperation::AbortOnError) != 0 ||
+        trans->getNdbError().code != 0)
+    {
+        assign_ndb_err_to_response(response, FAILED_EXEC_TXN, trans->getNdbError());
+        return -1;
+    }
+    
+    response->append("+OK\r\n");
+    return 0;
+}
+
 int get_simple_key_row(std::string *response,
                        const NdbDictionary::Table *tab,
                        Ndb *ndb,

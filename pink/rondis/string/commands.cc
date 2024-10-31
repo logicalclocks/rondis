@@ -238,41 +238,15 @@ void rondb_set_command(
     }
     printf("Inserting %d value rows\n", num_value_rows);
 
-    Uint32 remaining_len = value_len - INLINE_VALUE_LEN;
-    const char *start_value_ptr = &value_str[INLINE_VALUE_LEN];
-    for (Uint32 ordinal = 0; ordinal < num_value_rows; ordinal++)
-    {
-        Uint32 this_value_len = remaining_len;
-        if (remaining_len > EXTENSION_VALUE_LEN)
-        {
-            this_value_len = EXTENSION_VALUE_LEN;
-        }
-        if (create_value_row(response,
-                             ndb,
-                             dict,
-                             trans,
-                             start_value_ptr,
-                             rondb_key,
-                             this_value_len,
-                             ordinal,
-                             &varsize_param[0]) != 0)
-        {
-            ndb->closeTransaction(trans);
-            return;
-        }
-        remaining_len -= this_value_len;
-        start_value_ptr += this_value_len;
-    }
-
-    if (trans->execute(NdbTransaction::Commit,
-                       NdbOperation::AbortOnError) != 0 ||
-        trans->getNdbError().code != 0)
-    {
-        assign_ndb_err_to_response(response, FAILED_EXEC_TXN, trans->getNdbError());
-        ndb->closeTransaction(trans);
-        return;
-    }
-
-    response->append("+OK\r\n");
+    create_all_value_rows(response,
+                          ndb,
+                          dict,
+                          trans,
+                          rondb_key,
+                          value_str,
+                          value_len,
+                          num_value_rows,
+                          &varsize_param[0]);
+    ndb->closeTransaction(trans);
     return;
 }
