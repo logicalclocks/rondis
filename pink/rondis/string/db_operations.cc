@@ -407,13 +407,15 @@ int get_simple_key_row(std::string *response,
     {
         return 0;
     }
-    char buf[20];
-    int len = write_formatted(buf,
-                              sizeof(buf),
+    char header_buf[20];
+    int header_len = write_formatted(header_buf,
+                              sizeof(header_buf),
                               "$%u\r\n",
                               key_row->tot_value_len);
-    response->reserve(key_row->tot_value_len + len + 3);
-    response->append(buf);
+
+    // The total length of the expected response
+    response->reserve(header_len + key_row->tot_value_len + 2);
+    response->append(header_buf);
     response->append((const char *)&key_row->value_start[2], key_row->tot_value_len);
     response->append("\r\n");
     /*
@@ -508,9 +510,8 @@ int read_batched_value_rows(std::string *response,
     for (Uint32 i = 0; i < num_rows_to_read; i++)
     {
         // Transfer char pointer to response's string
-        Uint32 row_value_len =
-            value_rows[i].value[0] + (value_rows[i].value[1] << 8);
-        response->append(&value_rows[i].value[2], row_value_len);
+        Uint32 row_value_len = value_rows[i].value[0] + (value_rows[i].value[1] << 8);
+        response->append((const char *)&value_rows[i].value[2], row_value_len);
     }
     return 0;
 }
@@ -561,14 +562,14 @@ int get_complex_key_row(std::string *response,
 
     // Got inline value, now getting the other value rows
 
-    // Preparing response based on returned total value length
-    char buf[20];
-    int len = write_formatted(buf,
-                              sizeof(buf),
-                              "$%u\r\n",
-                              key_row->tot_value_len);
-    response->reserve(key_row->tot_value_len + len + 3);
-    response->append(buf);
+    // Writing the Redis header to the response (indicating value length)
+    char header_buf[20];
+    int header_len = write_formatted(header_buf,
+                                     sizeof(header_buf),
+                                     "$%u\r\n",
+                                     key_row->tot_value_len);
+    response->reserve(header_len + key_row->tot_value_len + 2);
+    response->append(header_buf);
 
     // Append inline value to response
     Uint32 inline_value_len = key_row->value_start[0] + (key_row->value_start[1] << 8);
