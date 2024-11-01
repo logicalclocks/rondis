@@ -69,7 +69,7 @@ set_and_get "$KEY:small" "hello"
 # TODO: Increase this as soon as GH actions allows it:
 # for NUM_CHARS in 100 10000 30000 50000 80000 100000; do
 
-for NUM_CHARS in 100 10000; do
+for NUM_CHARS in 100 10000 30000; do
     echo "Testing string with $NUM_CHARS characters..."
     test_value=$(generate_random_chars $NUM_CHARS)
     set_and_get "$KEY:$NUM_CHARS" "$test_value"
