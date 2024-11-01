@@ -29,14 +29,17 @@ EOF
     
     # GET the value
     local result=$(redis-cli GET "$key")
+
+    local expected_hash=$(echo -n "$value" | sha256sum | awk '{print $1}')
+    local actual_hash=$(echo -n "$result" | sha256sum | awk '{print $1}')
     
     # Check if the retrieved value matches the expected value
-    if [[ "$result" == "$value" ]]; then
+    if [[ "$expected_hash" == "$actual_hash" ]]; then
         echo "PASS: $key with value length ${#value}"
     else
         echo "FAIL: $key with value length ${#value}; got length ${#result}"
-        echo "Expected: $value"
-        echo "Got: $result"
+        echo "Expected hash:    $expected_hash"
+        echo "Received hash:    $actual_hash"
         exit 1
     fi
     echo
