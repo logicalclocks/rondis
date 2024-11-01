@@ -43,9 +43,14 @@ EOF
 }
 
 generate_random_chars() {
-    local length=$1
-    head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c $length
-    echo
+  local length=$1
+  local random_string=""
+
+  while [ "${#random_string}" -lt "$length" ]; do
+    random_string+=$(head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c "$length")
+  done
+
+  echo "${random_string:0:$length}"
 }
 
 # Test Cases
