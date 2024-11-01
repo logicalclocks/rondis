@@ -43,9 +43,14 @@ EOF
 }
 
 generate_random_chars() {
-    local length=$1
-    head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c $length
-    echo
+  local length=$1
+  local random_string=""
+
+  while [ "${#random_string}" -lt "$length" ]; do
+    random_string+=$(head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c "$length")
+  done
+
+  echo "${random_string:0:$length}"
 }
 
 # Test Cases
@@ -59,21 +64,16 @@ set_and_get "$KEY:empty" ""
 echo "Testing small string..."
 set_and_get "$KEY:small" "hello"
 
-echo "Testing medium string (100 characters)..."
-medium_value=$(generate_random_chars 100)
-set_and_get "$KEY:medium" "$medium_value"
-
 # Too large values seem to fail due to the network buffer size
 # Minimal amount to create value rows: 30000
+# TODO: Increase this as soon as GH actions allows it:
+# for NUM_CHARS in 100 10000 30000 50000 80000 100000; do
 
-# TODO: Increase this as soon as GH actions allows it
-echo "Testing large string (10,000 characters)..."
-large_value=$(generate_random_chars 10000)
-set_and_get "$KEY:large" "$large_value"
-
-# echo "Testing xl string (100,000 characters)..."
-# xl_value=$(generate_random_chars 100000)
-# set_and_get "$KEY:xl" "$xl_value"
+for NUM_CHARS in 100 10000; do
+    echo "Testing string with $NUM_CHARS characters..."
+    test_value=$(generate_random_chars $NUM_CHARS)
+    set_and_get "$KEY:$NUM_CHARS" "$test_value"
+done
 
 # echo "Testing xxl string (1,000,000 characters)..."
 # xxl_file=$(mktemp)
