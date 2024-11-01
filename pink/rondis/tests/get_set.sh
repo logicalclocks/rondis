@@ -34,7 +34,7 @@ EOF
     if [[ "$result" == "$value" ]]; then
         echo "PASS: $key with value length ${#value}"
     else
-        echo "FAIL: $key with value length ${#value}"
+        echo "FAIL: $key with value length ${#value}; got length ${#result}"
         echo "Expected: $value"
         echo "Got: $result"
         exit 1
