@@ -441,42 +441,76 @@ int get_value_rows(std::string *response,
         return -1;
     }
 
-    for (Uint32 row_index = 0; row_index < num_rows; row_index++)
+    // This is rounded up
+    Uint32 num_read_batches = (num_rows + ROWS_PER_READ - 1) / ROWS_PER_READ;
+    for (Uint32 batch = 0; batch < num_read_batches; batch++)
     {
-        struct value_table value_rows;
-        value_rows.rondb_key = rondb_key;
-        value_rows.ordinal = row_index;
+        Uint32 start_ordinal = batch * ROWS_PER_READ;
+        Uint32 num_rows_to_read = std::min(ROWS_PER_READ, num_rows - start_ordinal);
 
+        bool is_last_batch = (batch == (num_read_batches - 1));
+        NdbTransaction::ExecType commit_type = is_last_batch ? NdbTransaction::Commit : NdbTransaction::NoCommit;
+
+        if (read_batched_value_rows(response,
+                                    trans,
+                                    rondb_key,
+                                    num_rows_to_read,
+                                    start_ordinal,
+                                    commit_type) != 0)
+        {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+// Break up fetching large values to avoid blocking the network for other reads
+int read_batched_value_rows(std::string *response,
+                            NdbTransaction *trans,
+                            const Uint64 rondb_key,
+                            const Uint32 num_rows_to_read,
+                            const Uint32 start_ordinal,
+                            const NdbTransaction::ExecType commit_type)
+{
+    struct value_table value_rows[ROWS_PER_READ];
+
+    Uint32 ordinal = start_ordinal;
+    for (Uint32 i = 0; i < num_rows_to_read; i++)
+    {
+        value_rows[i].rondb_key = rondb_key;
+        value_rows[i].ordinal = ordinal;
         const NdbOperation *read_op = trans->readTuple(
             pk_value_record,
-            (const char *)&value_rows,
+            (const char *)&value_rows[i],
             entire_value_record,
-            (char *)&value_rows,
+            (char *)&value_rows[i],
             NdbOperation::LM_CommittedRead);
         if (read_op == nullptr)
         {
             assign_ndb_err_to_response(response,
                                        FAILED_GET_OP,
                                        trans->getNdbError());
-            return RONDB_INTERNAL_ERROR;
+            return -1;
         }
+        ordinal++;
+    }
 
-        bool is_last_row = (row_index == (num_rows - 1));
-        NdbTransaction::ExecType commit_type = is_last_row ? NdbTransaction::Commit : NdbTransaction::NoCommit;
-        if (trans->execute(commit_type,
-                           NdbOperation::AbortOnError) != 0 ||
-            trans->getNdbError().code != 0)
-        {
-            assign_ndb_err_to_response(response,
-                                       FAILED_READ_KEY,
-                                       trans->getNdbError());
-            return RONDB_INTERNAL_ERROR;
-        }
+    if (trans->execute(commit_type,
+                       NdbOperation::AbortOnError) != 0 ||
+        trans->getNdbError().code != 0)
+    {
+        assign_ndb_err_to_response(response,
+                                   FAILED_READ_KEY,
+                                   trans->getNdbError());
+        return -1;
+    }
 
+    for (Uint32 i = 0; i < num_rows_to_read; i++)
+    {
         // Transfer char pointer to response's string
         Uint32 row_value_len =
-            value_rows.value[0] + (value_rows.value[1] << 8);
-        response->append(&value_rows.value[2], row_value_len);
+            value_rows[i].value[0] + (value_rows[i].value[1] << 8);
+        response->append(&value_rows[i].value[2], row_value_len);
     }
     return 0;
 }

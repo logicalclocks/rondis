@@ -5,6 +5,8 @@
 #include <ndbapi/NdbApi.hpp>
 #include <ndbapi/Ndb.hpp>
 
+const Uint32 ROWS_PER_READ = 2;
+
 int create_key_row(std::string *response,
                    Ndb *ndb,
                    const NdbDictionary::Table *tab,
@@ -108,6 +110,13 @@ int get_value_rows(std::string *response,
                    const Uint32 num_rows,
                    const Uint64 key_id,
                    const Uint32 tot_value_len);
+
+int read_batched_value_rows(std::string *response,
+                            NdbTransaction *trans,
+                            const Uint64 rondb_key,
+                            const Uint32 num_rows_to_read,
+                            const Uint32 start_ordinal,
+                            const NdbTransaction::ExecType commit_type);
 
 int rondb_get_rondb_key(const NdbDictionary::Table *tab,
                         Uint64 &key_id,
