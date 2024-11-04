@@ -67,7 +67,6 @@ set_and_get "$KEY:empty" ""
 echo "Testing small string..."
 set_and_get "$KEY:small" "hello"
 
-# Too large values seem to fail due to the network buffer size
 # Minimal amount to create value rows: 30000
 for NUM_CHARS in 100 10000 30000 50000 57000 60000 70000; do
     echo "Testing string with $NUM_CHARS characters..."
