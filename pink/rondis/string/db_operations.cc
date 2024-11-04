@@ -601,22 +601,12 @@ int rondb_get_rondb_key(const NdbDictionary::Table *tab,
                         Ndb *ndb,
                         std::string *response)
 {
-    if (ndb->getAutoIncrementValue(tab, rondb_key, unsigned(1024)) == 0)
+    if (ndb->getAutoIncrementValue(tab, rondb_key, unsigned(1024)) != 0)
     {
-        return 0;
+        assign_ndb_err_to_response(response,
+                                   "Failed to get autoincrement value",
+                                   ndb->getNdbError());
+        return -1;
     }
-    if (ndb->getNdbError().classification == NdbError::NoDataFound)
-    {
-        printf("No data found when auto-incrementing value for table '%s'; starting from scratch\n",
-               tab->getName());
-        if (ndb->setAutoIncrementValue(tab, Uint64(1), false) == 0)
-        {
-            rondb_key = Uint64(1);
-            return 0;
-        }
-    }
-    assign_ndb_err_to_response(response,
-                               "Failed to get autoincrement value",
-                               ndb->getNdbError());
-    return -1;
+    return 0;
 }
