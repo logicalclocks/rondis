@@ -9,10 +9,6 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  env:
-    RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
-    RONDB_PATH: /tmp/rondb
-
   build-macos:
     runs-on: macos-latest
     env:
