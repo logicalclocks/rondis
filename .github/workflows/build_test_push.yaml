@@ -9,6 +9,14 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: cd pink && ./build.sh
+
   build-and-run-redis-benchmark:
     runs-on: ubuntu-latest
     env:
