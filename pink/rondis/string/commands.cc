@@ -50,8 +50,9 @@ void rondb_get_command(Ndb *ndb,
     // start copying from 3rd byte
     memcpy(&key_row.redis_key[2], key_str, key_len);
     // Length as little endian
-    key_row.redis_key[0] = key_len & 255;
-    key_row.redis_key[1] = key_len >> 8;
+    Uint8 *ptr = (Uint8 *)&key_row.redis_key[0];
+    ptr[0] = Uint8(key_len & 255);
+    ptr[1] = Uint8(key_len >> 8);
 
     // This is (usually) a local operation to calculate the correct data node, using the
     // hash of the pk value.
@@ -86,8 +87,9 @@ void rondb_get_command(Ndb *ndb,
         // start copying from 3rd byte
         memcpy(&key_row.redis_key[2], key_str, key_len);
         // Length as little endian
-        key_row.redis_key[0] = key_len & 255;
-        key_row.redis_key[1] = key_len >> 8;
+        Uint8 *ptr = (Uint8 *)&key_row.redis_key[0];
+        ptr[0] = Uint8(key_len & 255);
+        ptr[1] = Uint8(key_len >> 8);
 
         /*
             Our value uses value rows, so a more complex read is required.
