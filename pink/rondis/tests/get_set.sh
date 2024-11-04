@@ -50,7 +50,7 @@ generate_random_chars() {
   local random_string=""
 
   while [ "${#random_string}" -lt "$length" ]; do
-    random_string+=$(head /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c "$length")
+    random_string+=$(head /dev/urandom | LC_CTYPE=C tr -dc 'a-zA-Z0-9' | head -c "$length")
   done
 
   echo "${random_string:0:$length}"
