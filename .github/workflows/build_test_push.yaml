@@ -31,6 +31,7 @@ jobs:
         run: cd pink && ./build.sh
 
   build-and-run-redis-benchmark:
+    needs: [build-macos]
     runs-on: ubuntu-latest
     env:
       RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
