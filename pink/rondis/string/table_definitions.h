@@ -69,7 +69,7 @@ struct value_table
 {
     Uint64 rondb_key;
     Uint32 ordinal;
-    char value[EXTENSION_VALUE_LEN];
+    char value[EXTENSION_VALUE_LEN + 2];
 };
 
 /*
