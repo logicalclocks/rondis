@@ -15,6 +15,9 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    env:
+      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
+      RONDB_PATH: /tmp/rondb
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +33,8 @@ jobs:
   build-and-run-redis-benchmark:
     runs-on: ubuntu-latest
     env:
+      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
+      RONDB_PATH: /tmp/rondb
       IMAGE_NAME: rondis:latest
       CONTAINER_NAME: rondis
       RONDIS_PORT: 6379
