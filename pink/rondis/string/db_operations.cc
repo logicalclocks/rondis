@@ -265,8 +265,9 @@ void write_data_to_key_op(NdbOperation *ndb_op,
         this_value_len = INLINE_VALUE_LEN;
     }
     memcpy(&buf[2], value_str, this_value_len);
-    buf[0] = this_value_len & 255;
-    buf[1] = this_value_len >> 8;
+    Uint8 *ptr = (Uint8 *)buf;
+    ptr[0] = (Uint8)(this_value_len & 255);
+    ptr[1] = (Uint8)(this_value_len >> 8);
     ndb_op->setValue(KEY_TABLE_COL_value_start, buf);
 }
 
@@ -300,8 +301,9 @@ int create_value_row(std::string *response,
     op->equal(VALUE_TABLE_COL_rondb_key, rondb_key);
     op->equal(VALUE_TABLE_COL_ordinal, ordinal);
     memcpy(&buf[2], start_value_ptr, this_value_len);
-    buf[0] = this_value_len & 255;
-    buf[1] = this_value_len >> 8;
+    Uint8 *ptr = (Uint8 *)buf;
+    ptr[0] = (Uint8)(this_value_len & 255);
+    ptr[1] = (Uint8)(this_value_len >> 8);
     op->setValue(VALUE_TABLE_COL_value, buf);
     {
         if (op->getNdbError().code != 0)
@@ -409,9 +411,9 @@ int get_simple_key_row(std::string *response,
     }
     char header_buf[20];
     int header_len = write_formatted(header_buf,
-                              sizeof(header_buf),
-                              "$%u\r\n",
-                              key_row->tot_value_len);
+                                     sizeof(header_buf),
+                                     "$%u\r\n",
+                                     key_row->tot_value_len);
 
     // The total length of the expected response
     response->reserve(header_len + key_row->tot_value_len + 2);
@@ -510,7 +512,9 @@ int read_batched_value_rows(std::string *response,
     for (Uint32 i = 0; i < num_rows_to_read; i++)
     {
         // Transfer char pointer to response's string
-        Uint32 row_value_len = value_rows[i].value[0] + (value_rows[i].value[1] << 8);
+        Uint8 low = (Uint8)value_rows[i].value[0];
+        Uint8 high = (Uint8)value_rows[i].value[1];
+        Uint32 row_value_len = Uint32(low) + (Uint32(256) * Uint32(high));
         response->append((const char *)&value_rows[i].value[2], row_value_len);
     }
     return 0;
@@ -572,7 +576,9 @@ int get_complex_key_row(std::string *response,
     response->append(header_buf);
 
     // Append inline value to response
-    Uint32 inline_value_len = key_row->value_start[0] + (key_row->value_start[1] << 8);
+    Uint8 low = (Uint8)key_row->value_start[0];
+    Uint8 high = (Uint8)key_row->value_start[1];
+    Uint32 inline_value_len = Uint32(low) + (Uint32(256) * Uint32(high));
     response->append((const char *)&key_row->value_start[2], inline_value_len);
 
     int ret_code = get_value_rows(response,
