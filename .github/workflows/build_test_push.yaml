@@ -9,25 +9,16 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-macos:
+  build-pink-macos:
     runs-on: macos-latest
-    env:
-      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
-      RONDB_PATH: /tmp/rondb
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download RonDB
-        run: |
-          wget $RONDB_TARBALL_URI -O /tmp/temp_tarball.tar.gz
-          mkdir -p $RONDB_PATH
-          tar xfz /tmp/temp_tarball.tar.gz -C $RONDB_PATH --strip-components=1
-
       - name: Build
-        run: cd pink && ./build.sh
+        run: cd pink && make example
 
   build-and-run-redis-benchmark:
-    needs: [build-macos]
+    needs: [build-pink-macos]
     runs-on: ubuntu-latest
     env:
       RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
