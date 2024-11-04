@@ -605,8 +605,10 @@ int rondb_get_rondb_key(const NdbDictionary::Table *tab,
     {
         return 0;
     }
-    if (ndb->getNdbError().code == 626)
+    if (ndb->getNdbError().classification == NdbError::NoDataFound)
     {
+        printf("No data found when auto-incrementing value for table '%s'; starting from scratch\n",
+               tab->getName());
         if (ndb->setAutoIncrementValue(tab, Uint64(1), false) == 0)
         {
             rondb_key = Uint64(1);
