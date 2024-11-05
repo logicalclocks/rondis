@@ -35,9 +35,4 @@ CmdTable* PikaCmdTableManager::GetCmdTable() { return cmds_.get(); }
 
 uint32_t PikaCmdTableManager::GetMaxCmdId() { return cmdId_; }
 
-void PikaCmdTableManager::InsertCurrentThreadDistributionMap() {
-  auto tid = std::this_thread::get_id();
-  std::lock_guard l(map_protector_);
-}
-
 bool PikaCmdTableManager::CmdExist(const std::string& cmd) const { return cmds_->find(cmd) != cmds_->end(); }

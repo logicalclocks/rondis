@@ -31,16 +31,6 @@ std::shared_ptr<Cmd> PikaClientConn::DoCmd(const pink::RedisCmdArgsType& argv, c
     return c_ptr;
   }
 
-  int8_t subCmdIndex = -1;
-  std::string errKey;
-  std::string cmdName = c_ptr->name();
-
-  if (IsInTxn() && opt != kCmdNameExec && opt != kCmdNameWatch && opt != kCmdNameDiscard && opt != kCmdNameMulti) {
-    PushCmdToQue(c_ptr);
-    c_ptr->res().SetRes(CmdRes::kTxnQueued);
-    return c_ptr;
-  }
-
   // Process Command
   c_ptr->Execute();
 
@@ -65,14 +55,6 @@ void PikaClientConn::TryWriteResp() {
 void PikaClientConn::PushCmdToQue(std::shared_ptr<Cmd> cmd) { txn_cmd_que_.push(cmd); }
 
 void PikaClientConn::ClearTxnCmdQue() { txn_cmd_que_ = std::queue<std::shared_ptr<Cmd>>{}; }
-
-void PikaClientConn::ExitTxn() {
-  if (IsInTxn()) {
-    ClearTxnCmdQue();
-    std::lock_guard<std::mutex> lg(txn_state_mu_);
-    txn_state_.reset();
-  }
-}
 
 void PikaClientConn::ExecRedisCmd(const pink::RedisCmdArgsType& argv, std::shared_ptr<std::string>& resp_ptr,
                                   bool cache_miss_in_rtc) {

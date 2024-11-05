@@ -25,8 +25,6 @@ class PikaCmdTableManager {
  private:
   std::shared_ptr<Cmd> NewCommand(const std::string& opt);
 
-  void InsertCurrentThreadDistributionMap();
-
   std::unique_ptr<CmdTable> cmds_;
 
   uint32_t cmdId_ = 0;
