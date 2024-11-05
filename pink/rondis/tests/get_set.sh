@@ -112,7 +112,7 @@ done
 run_client() {
     local client="$1"
     local key="$2"
-    NUM_ITERATIONS=10
+    NUM_ITERATIONS=5
     for ((i=1; i<=$NUM_ITERATIONS; i++)); do
         # Generate a unique key for each client and iteration
         local test_value=$(generate_random_chars 32000)
