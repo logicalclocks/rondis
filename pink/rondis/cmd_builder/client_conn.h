@@ -27,7 +27,6 @@ class PikaClientConn : public pink::RedisConn {
   std::queue<std::shared_ptr<Cmd>> GetTxnCmdQue();
   void PushCmdToQue(std::shared_ptr<Cmd> cmd);
   void ClearTxnCmdQue();
-  void ExitTxn();
 
   pink::ServerThread* server_thread() { return server_thread_; }
 
