@@ -16,6 +16,9 @@ extern std::unique_ptr<PikaReplicaManager> g_pika_rm;
 extern std::unique_ptr<PikaCmdTableManager> g_pika_cmd_table_manager;
 
 void InitCmdTable(CmdTable* cmd_table) {
+
+#if DISABLE_CMDS_SECTION
+
   // Admin
   ////Slaveof
   std::unique_ptr<Cmd> slaveofptr =
@@ -218,6 +221,8 @@ void InitCmdTable(CmdTable* cmd_table) {
   cmd_table->insert(
       std::pair<std::string, std::unique_ptr<Cmd>>(kCmdNameSlotsCleanupOff, std::move(slotscleanupoffptr)));
 
+#endif
+
   // Kv
   ////SetCmd
   std::unique_ptr<Cmd> setptr =
@@ -227,6 +232,9 @@ void InitCmdTable(CmdTable* cmd_table) {
   std::unique_ptr<Cmd> getptr =
       std::make_unique<GetCmd>(kCmdNameGet, 2, kCmdFlagsRead | kCmdFlagsKv  | kCmdFlagsDoThroughDB | kCmdFlagsUpdateCache | kCmdFlagsReadCache | kCmdFlagsSlow);
   cmd_table->insert(std::pair<std::string, std::unique_ptr<Cmd>>(kCmdNameGet, std::move(getptr)));
+
+#if DISABLE_CMDS_SECTION
+
   ////DelCmd
   std::unique_ptr<Cmd> delptr =
       std::make_unique<DelCmd>(kCmdNameDel, -2, kCmdFlagsWrite | kCmdFlagsOperateKey  | kCmdFlagsDoThroughDB | kCmdFlagsUpdateCache | kCmdFlagsFast);
@@ -796,6 +804,9 @@ void InitCmdTable(CmdTable* cmd_table) {
     std::unique_ptr<Cmd> xinfoptr =
         std::make_unique<XInfoCmd>(kCmdNameXInfo, -2, kCmdFlagsRead |  kCmdFlagsStream | kCmdFlagsSlow);
     cmd_table->insert(std::pair<std::string, std::unique_ptr<Cmd>>(kCmdNameXInfo, std::move(xinfoptr)));
+
+#endif
+
 }
 
 Cmd* GetCmdFromDB(const std::string& opt, const CmdTable& cmd_table) {

@@ -189,6 +189,8 @@ void GetCmd::DoUpdateCache() {
   }
 }
 
+#if DISABLE_CMDS_SECTION
+
 void DelCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, name());
@@ -1960,3 +1962,5 @@ void PKRScanRangeCmd::Do() {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
 }
+
+#endif
