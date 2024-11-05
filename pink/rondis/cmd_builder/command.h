@@ -466,18 +466,6 @@ class CmdRes {
   CmdRet ret_ = kNone;
 };
 
-/**
- * Current used by:
- * blpop,brpop
- */
-struct UnblockTaskArgs {
-  std::string key;
-  std::shared_ptr<DB> db;
-  net::DispatchThread* dispatchThread{ nullptr };
-  UnblockTaskArgs(std::string key_, std::shared_ptr<DB> db_, net::DispatchThread* dispatchThread_)
-      : key(std::move(key_)), db(db_), dispatchThread(dispatchThread_) {}
-};
-
 class PikaClientConn;
 
 class Cmd : public std::enable_shared_from_this<Cmd> {
@@ -499,24 +487,13 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
     std::shared_ptr<SyncMasterDB> sync_db;
     HintKeys hint_keys;
   };
-  struct CommandStatistics {
-    CommandStatistics() = default;
-    CommandStatistics(const CommandStatistics& other) {
-      cmd_time_consuming.store(other.cmd_time_consuming.load());
-      cmd_count.store(other.cmd_count.load());
-    }
-    std::atomic<int32_t> cmd_count = {0};
-    std::atomic<int32_t> cmd_time_consuming = {0};
-  };
-  CommandStatistics state;
-  Cmd(std::string name, int arity, uint32_t flag, uint32_t aclCategory = 0);
+  Cmd(std::string name, int arity, uint32_t flag);
   virtual ~Cmd() = default;
 
   virtual std::vector<std::string> current_key() const;
   virtual void Execute();
   virtual void Do() {};
   virtual void DoThroughDB() {}
-  virtual void DoUpdateCache() {}
   virtual void ReadCache() {}
   virtual Cmd* Clone() = 0;
   // used for execute multikey command into different slots
@@ -525,7 +502,7 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
 
   int8_t SubCmdIndex(const std::string& cmdName);  // if the command no subCommand，return -1；
 
-  void Initial(const PikaCmdArgsType& argv, const std::string& db_name);
+  void Initial(const PikaCmdArgsType& argv);
   uint32_t flag() const;
   bool hasFlag(uint32_t flag) const;
   bool is_read() const;
@@ -534,17 +511,12 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
 
   bool IsLocal() const;
   bool IsSuspend() const;
-  bool IsAdminRequire() const;
   bool HasSubCommand() const;                   // The command is there a sub command
   std::vector<std::string> SubCommand() const;  // Get command is there a sub command
-  bool IsNeedUpdateCache() const;
-  bool IsNeedReadCache() const;
-  bool IsNeedCacheDo() const;
   bool HashtagIsConsistent(const std::string& lhs, const std::string& rhs) const;
   uint64_t GetDoDuration() const { return do_duration_; };
   std::shared_ptr<DB> GetDB() const { return db_; };
   uint32_t AclCategory() const;
-  void AddAclCategory(uint32_t aclCategory);
   void SetDbName(const std::string& db_name) { db_name_ = db_name; }
   std::string GetDBName() { return db_name_; }
 
@@ -554,16 +526,11 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
   PikaCmdArgsType& argv();
   virtual std::string ToRedisProtocol();
 
-  void SetConn(const std::shared_ptr<net::NetConn>& conn);
-  std::shared_ptr<net::NetConn> GetConn();
-
   void SetResp(const std::shared_ptr<std::string>& resp);
   std::shared_ptr<std::string> GetResp();
 
   void SetStage(CmdStage stage);
   void SetCmdId(uint32_t cmdId){cmdId_ = cmdId;}
-
-  virtual void DoBinlog();
 
   uint32_t GetCmdId() const { return cmdId_; };
   bool CheckArg(uint64_t num) const;
@@ -575,9 +542,7 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
   // enable copy, used default copy
   // Cmd(const Cmd&);
   void ProcessCommand(const HintKeys& hint_key = HintKeys());
-  void InternalProcessCommand(const HintKeys& hint_key);
   void DoCommand(const HintKeys& hint_key);
-  bool DoReadCommandInCache();
   void LogCommand() const;
 
   std::string name_;
@@ -593,12 +558,10 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
 //   rocksdb::Status s_;
   std::shared_ptr<DB> db_;
   std::shared_ptr<SyncMasterDB> sync_db_;
-  std::weak_ptr<net::NetConn> conn_;
   std::weak_ptr<std::string> resp_;
   CmdStage stage_ = kNone;
   uint64_t do_duration_ = 0;
   uint32_t cmdId_ = 0;
-  uint32_t aclCategory_ = 0;
   bool cache_missed_in_rtc_{false};
 
  private:
