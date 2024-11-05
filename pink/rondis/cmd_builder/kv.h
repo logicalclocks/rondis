@@ -17,14 +17,14 @@ class SetCmd : public Cmd {
  public:
   enum SetCondition { kNONE, kNX, kXX, kVX, kEXORPX };
   SetCmd(const std::string& name, int arity, uint32_t flag)
-      : Cmd(name, arity, flag, static_cast<uint32_t>(AclCategory::STRING)){};
+      : Cmd(name, arity, flag){};
   std::vector<std::string> current_key() const override {
     std::vector<std::string> res;
     res.push_back(key_);
     return res;
   }
   void Do() override;
-  void DoUpdateCache() override;
+
   void DoThroughDB() override;
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -51,7 +51,7 @@ class SetCmd : public Cmd {
 class GetCmd : public Cmd {
  public:
   GetCmd(const std::string& name, int arity, uint32_t flag)
-      : Cmd(name, arity, flag, static_cast<uint32_t>(AclCategory::STRING)){};
+      : Cmd(name, arity, flag){};
   std::vector<std::string> current_key() const override {
     std::vector<std::string> res;
     res.push_back(key_);
@@ -59,7 +59,7 @@ class GetCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void ReadCache() override;
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -81,12 +81,11 @@ class DelCmd : public Cmd {
       : Cmd(name, arity, flag, static_cast<uint32_t>(AclCategory::KEYSPACE)){};
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   std::vector<std::string> current_key() const override { return keys_; }
   void Split(const HintKeys& hint_keys) override;
   void Merge() override;
   Cmd* Clone() override { return new DelCmd(*this); }
-  void DoBinlog() override;
 
  private:
   std::vector<std::string> keys_;
@@ -106,7 +105,7 @@ class IncrCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new IncrCmd(*this); }
@@ -131,7 +130,7 @@ class IncrbyCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new IncrbyCmd(*this); }
@@ -156,7 +155,7 @@ class IncrbyfloatCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new IncrbyfloatCmd(*this); }
@@ -181,7 +180,7 @@ class DecrCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new DecrCmd(*this); }
@@ -204,7 +203,7 @@ class DecrbyCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new DecrbyCmd(*this); }
@@ -227,7 +226,7 @@ class GetsetCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new GetsetCmd(*this); }
@@ -250,7 +249,7 @@ class AppendCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new AppendCmd(*this); }
@@ -272,7 +271,7 @@ class MgetCmd : public Cmd {
   void Do() override;
   void ReadCache() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   std::vector<std::string> current_key() const override { return keys_; }
   void Split(const HintKeys& hint_keys) override;
   void Merge() override;
@@ -345,7 +344,7 @@ class SetexCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new SetexCmd(*this); }
@@ -370,7 +369,7 @@ class PsetexCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new PsetexCmd(*this); }
@@ -418,7 +417,7 @@ class MsetCmd : public Cmd {
 
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   std::vector<std::string> current_key() const override {
     std::vector<std::string> res;
     for (auto& kv : kvs_) {
@@ -429,7 +428,6 @@ class MsetCmd : public Cmd {
   void Split(const HintKeys& hint_keys) override;
   void Merge() override;
   Cmd* Clone() override { return new MsetCmd(*this); }
-  void DoBinlog() override;
 
  private:
   std::vector<storage::KeyValue> kvs_;
@@ -460,7 +458,6 @@ class MsetnxCmd : public Cmd {
   void Split(const HintKeys& hint_keys) override {};
   void Merge() override {};
   Cmd* Clone() override { return new MsetnxCmd(*this); }
-  void DoBinlog() override;
 
  private:
   std::vector<storage::KeyValue> kvs_;
@@ -482,7 +479,7 @@ class GetrangeCmd : public Cmd {
   void Do() override;
   void ReadCache() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new GetrangeCmd(*this); }
@@ -508,7 +505,7 @@ class SetrangeCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new SetrangeCmd(*this); }
@@ -533,7 +530,7 @@ class StrlenCmd : public Cmd {
   void Do() override;
   void ReadCache() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new StrlenCmd(*this); }
@@ -575,7 +572,7 @@ class ExpireCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new ExpireCmd(*this); }
@@ -599,7 +596,7 @@ class PexpireCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new PexpireCmd(*this); }
@@ -623,7 +620,7 @@ class ExpireatCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new ExpireatCmd(*this); }
@@ -646,7 +643,7 @@ class PexpireatCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new PexpireatCmd(*this); }
@@ -713,7 +710,7 @@ class PersistCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new PersistCmd(*this); }
@@ -802,7 +799,7 @@ class PKSetexAtCmd : public Cmd {
   }
   void Do() override;
   void DoThroughDB() override;
-  void DoUpdateCache() override;
+
   void Split(const HintKeys& hint_keys) override {};
   void Merge() override {};
   Cmd* Clone() override { return new PKSetexAtCmd(*this); }

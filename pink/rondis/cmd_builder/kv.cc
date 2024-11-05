@@ -8,8 +8,6 @@
 #include "kv.h"
 #include "command.h"
 
-
-extern std::unique_ptr<PikaConf> g_pika_conf;
 /* SET key value [NX] [XX] [EX <seconds>] [PX <milliseconds>] */
 void SetCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
@@ -102,19 +100,6 @@ void SetCmd::DoThroughDB() {
   Do();
 }
 
-void SetCmd::DoUpdateCache() {
-  if (SetCmd::kNX == condition_) {
-    return;
-  }
-  if (s_.ok()) {
-    if (has_ttl_) {
-      db_->cache()->Setxx(key_, value_, ttl_millsec / 1000);
-    } else {
-      db_->cache()->SetxxWithoutTTL(key_, value_);
-    }
-  }
-}
-
 std::string SetCmd::ToRedisProtocol() {
   if (condition_ == SetCmd::kEXORPX) {
     std::string content;
@@ -183,12 +168,6 @@ void GetCmd::DoThroughDB() {
   Do();
 }
 
-void GetCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->WriteKVToCache(key_, value_, ttl_millsec_ / 1000);
-  }
-}
-
 #if DISABLE_CMDS_SECTION
 
 void DelCmd::DoInitial() {
@@ -219,12 +198,6 @@ void DelCmd::DoThroughDB() {
   Do();
 }
 
-void DelCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Del(keys_);
-  }
-}
-
 void DelCmd::Split(const HintKeys& hint_keys) {
   std::map<storage::DataType, storage::Status> type_status;
   int64_t count = db_->storage()->Del(hint_keys.keys);
@@ -236,16 +209,6 @@ void DelCmd::Split(const HintKeys& hint_keys) {
 }
 
 void DelCmd::Merge() { res_.AppendInteger(split_res_); }
-
-void DelCmd::DoBinlog() {
-  std::string opt = argv_.at(0);
-  for(auto& key: keys_) {
-    argv_.clear();
-    argv_.emplace_back(opt);
-    argv_.emplace_back(key);
-    Cmd::DoBinlog();
-  }
-}
 
 void IncrCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
@@ -273,12 +236,6 @@ void IncrCmd::Do() {
 
 void IncrCmd::DoThroughDB() {
   Do();
-}
-
-void IncrCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Incrxx(key_);
-  }
 }
 
 std::string IncrCmd::ToRedisProtocol() {
@@ -337,12 +294,6 @@ void IncrbyCmd::Do() {
 
 void IncrbyCmd::DoThroughDB() {
   Do();
-}
-
-void IncrbyCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->IncrByxx(key_, by_);
-  }
 }
 
 std::string IncrbyCmd::ToRedisProtocol() {
@@ -405,15 +356,6 @@ void IncrbyfloatCmd::DoThroughDB() {
   Do();
 }
 
-void IncrbyfloatCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    long double long_double_by;
-    if (storage::StrToLongDouble(value_.data(), value_.size(), &long_double_by) != -1) {
-      db_->cache()->Incrbyfloatxx(key_, long_double_by);
-    }
-  }
-}
-
 std::string IncrbyfloatCmd::ToRedisProtocol() {
   std::string content;
   content.reserve(RAW_ARGS_LEN);
@@ -467,12 +409,6 @@ void DecrCmd::DoThroughDB() {
   Do();
 }
 
-void DecrCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Decrxx(key_);
-  }
-}
-
 void DecrbyCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNameDecrby);
@@ -503,12 +439,6 @@ void DecrbyCmd::Do() {
 
 void DecrbyCmd::DoThroughDB() {
   Do();
-}
-
-void DecrbyCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->DecrByxx(key_, by_);
-  }
 }
 
 void GetsetCmd::DoInitial() {
@@ -542,12 +472,6 @@ void GetsetCmd::DoThroughDB() {
   Do();
 }
 
-void GetsetCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->SetxxWithoutTTL(key_, new_value_);
-  }
-}
-
 void AppendCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNameAppend);
@@ -572,12 +496,6 @@ void AppendCmd::Do() {
 
 void AppendCmd::DoThroughDB() {
   Do();
-}
-
-void AppendCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Appendxx(key_, value_);
-  }
 }
 
 std::string AppendCmd::ToRedisProtocol() {
@@ -701,17 +619,6 @@ void MgetCmd::ReadCache() {
   }
 }
 
-void MgetCmd::DoUpdateCache() {
-  size_t db_index = 0;
-  for (const auto key : cache_miss_keys_) {
-    if (db_index < db_value_status_array_.size() && db_value_status_array_[db_index].status.ok()) {
-      int64_t ttl_millsec = db_value_status_array_[db_index].ttl_millsec;
-      db_->cache()->WriteKVToCache(const_cast<std::string&>(key), db_value_status_array_[db_index].value, ttl_millsec > 0 ? ttl_millsec / 1000 : ttl_millsec);
-    }
-    db_index++;
-  }
-}
-
 void MgetCmd::MergeCachedAndDbResults() {
   res_.AppendArrayLenUint64(keys_.size());
 
@@ -772,7 +679,6 @@ void KeysCmd::DoInitial() {
 void KeysCmd::Do() {
   int64_t total_key = 0;
   int64_t cursor = 0;
-  size_t raw_limit = g_pika_conf->max_client_response_size();
   std::string raw;
   std::vector<std::string> keys;
   do {
@@ -781,10 +687,6 @@ void KeysCmd::Do() {
     for (const auto& key : keys) {
       RedisAppendLenUint64(raw, key.size(), "$");
       RedisAppendContent(raw, key);
-    }
-    if (raw.size() >= raw_limit) {
-      res_.SetRes(CmdRes::kErrOther, "Response exceeds the max-client-response-size limit");
-      return;
     }
     total_key += static_cast<int64_t>(keys.size());
   } while (cursor != 0);
@@ -863,12 +765,6 @@ void SetexCmd::DoThroughDB() {
   Do();
 }
 
-void SetexCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Setxx(key_, value_, ttl_sec_);
-  }
-}
-
 std::string SetexCmd::ToRedisProtocol() {
   std::string content;
   content.reserve(RAW_ARGS_LEN);
@@ -920,12 +816,6 @@ void PsetexCmd::Do() {
 
 void PsetexCmd::DoThroughDB() {
   Do();
-}
-
-void PsetexCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Setxx(key_, value_,  ttl_millsec / 1000);
-  }
 }
 
 std::string PsetexCmd::ToRedisProtocol() {
@@ -1008,14 +898,6 @@ void MsetCmd::DoThroughDB() {
   Do();
 }
 
-void MsetCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    for (auto key : kvs_) {
-      db_->cache()->SetxxWithoutTTL(key.key, key.value);
-    }
-  }
-}
-
 void MsetCmd::Split(const HintKeys& hint_keys) {
   std::vector<storage::KeyValue> kvs;
   const std::vector<std::string>& keys = hint_keys.keys;
@@ -1041,21 +923,6 @@ void MsetCmd::Split(const HintKeys& hint_keys) {
 }
 
 void MsetCmd::Merge() {}
-
-void MsetCmd::DoBinlog() {
-  PikaCmdArgsType set_argv;
-  set_argv.resize(3);
-  //used "set" instead of "SET" to distinguish the binlog of Set
-  set_argv[0] = "set";
-  set_cmd_->SetConn(GetConn());
-  set_cmd_->SetResp(resp_.lock());
-  for(auto& kv: kvs_) {
-    set_argv[1] = kv.key;
-    set_argv[2] = kv.value;
-    set_cmd_->Initial(set_argv, db_name_);
-    set_cmd_->DoBinlog();
-  }
-}
 
 void MsetnxCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
@@ -1086,25 +953,6 @@ void MsetnxCmd::Do() {
     res_.SetRes(CmdRes::kMultiKey);
   } else {
     res_.SetRes(CmdRes::kErrOther, s.ToString());
-  }
-}
-
-void MsetnxCmd::DoBinlog() {
-  if (!success_) {
-    //some keys already exist, set operations aborted, no need of binlog
-    return;
-  }
-  PikaCmdArgsType set_argv;
-  set_argv.resize(3);
-  //used "set" instead of "SET" to distinguish the binlog of SetCmd
-  set_argv[0] = "set";
-  set_cmd_->SetConn(GetConn());
-  set_cmd_->SetResp(resp_.lock());
-  for (auto& kv: kvs_) {
-    set_argv[1] = kv.key;
-    set_argv[2] = kv.value;
-    set_cmd_->Initial(set_argv, db_name_);
-    set_cmd_->DoBinlog();
   }
 }
 
@@ -1163,12 +1011,6 @@ void GetrangeCmd::DoThroughDB() {
   }
 }
 
-void GetrangeCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->WriteKVToCache(key_, value_, sec_);
-  }
-}
-
 void SetrangeCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNameSetrange);
@@ -1197,12 +1039,6 @@ void SetrangeCmd::Do() {
 
 void SetrangeCmd::DoThroughDB() {
   Do();
-}
-
-void SetrangeCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->SetRangexx(key_, offset_, value_);
-  }
 }
 
 void StrlenCmd::DoInitial() {
@@ -1242,12 +1078,6 @@ void StrlenCmd::DoThroughDB() {
     res_.AppendInteger(value_.size());
   } else {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
-  }
-}
-
-void StrlenCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->WriteKVToCache(key_, value_, ttl_millsec > 0 ? ttl_millsec : ttl_millsec / 1000);
   }
 }
 
@@ -1347,12 +1177,6 @@ void ExpireCmd::DoThroughDB() {
   Do();
 }
 
-void ExpireCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Expire(key_, ttl_sec_);
-  }
-}
-
 void PexpireCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNamePexpire);
@@ -1402,12 +1226,6 @@ void PexpireCmd::DoThroughDB() {
   Do();
 }
 
-void PexpireCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Expire(key_, ttl_millsec);
-  }
-}
-
 void ExpireatCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNameExpireat);
@@ -1435,12 +1253,6 @@ void ExpireatCmd::DoThroughDB() {
   Do();
 }
 
-void ExpireatCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Expireat(key_, time_stamp_sec_);
-  }
-}
-
 void PexpireatCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNamePexpireat);
@@ -1466,12 +1278,6 @@ void PexpireatCmd::Do() {
 
 void PexpireatCmd::DoThroughDB() {
   Do();
-}
-
-void PexpireatCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Expireat(key_, time_stamp_millsec_ / 1000);
-  }
 }
 
 void TtlCmd::DoInitial() {
@@ -1555,12 +1361,6 @@ void PersistCmd::Do() {
 
 void PersistCmd::DoThroughDB() {
   Do();
-}
-
-void PersistCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    db_->cache()->Persist(key_);
-  }
 }
 
 void TypeCmd::DoInitial() {
@@ -1656,7 +1456,6 @@ void ScanCmd::Do() {
   int64_t batch_count = 0;
   int64_t left = count_;
   int64_t cursor_ret = cursor_;
-  size_t raw_limit = g_pika_conf->max_client_response_size();
   std::string raw;
   std::vector<std::string> keys;
   // To avoid memory overflow, we call the Scan method in batches
@@ -1668,10 +1467,6 @@ void ScanCmd::Do() {
     for (const auto& key : keys) {
       RedisAppendLenUint64(raw, key.size(), "$");
       RedisAppendContent(raw, key);
-    }
-    if (raw.size() >= raw_limit) {
-      res_.SetRes(CmdRes::kErrOther, "Response exceeds the max-client-response-size limit");
-      return;
     }
     total_key += static_cast<int64_t>(keys.size());
   } while (cursor_ret != 0 && (left != 0));
@@ -1778,17 +1573,6 @@ void PKSetexAtCmd::Do() {
 
 void PKSetexAtCmd::DoThroughDB() {
   Do();
-}
-
-void PKSetexAtCmd::DoUpdateCache() {
-  if (s_.ok()) {
-    auto expire = time_stamp_sec_ - static_cast<int64_t>(std::time(nullptr));
-    if (expire <= 0) [[unlikely]] {
-      db_->cache()->Del({key_});
-      return;
-    }
-    db_->cache()->Setxx(key_, value_, expire);
-  }
 }
 
 void PKScanRangeCmd::DoInitial() {

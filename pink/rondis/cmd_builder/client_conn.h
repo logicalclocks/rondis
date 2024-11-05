@@ -50,16 +50,6 @@ class PikaClientConn : public net::RedisConn {
  public:
   using WriteCompleteCallback = std::function<void()>;
 
-  struct BgTaskArg {
-    std::shared_ptr<Cmd> cmd_ptr;
-    std::shared_ptr<PikaClientConn> conn_ptr;
-    std::vector<net::RedisCmdArgsType> redis_cmds;
-    std::shared_ptr<std::string> resp_ptr;
-    LogOffset offset;
-    std::string db_name;
-    bool cache_miss_in_rtc_;
-  };
-
   struct TxnStateBitMask {
    public:
     static constexpr uint8_t Start = 0;
@@ -72,30 +62,11 @@ class PikaClientConn : public net::RedisConn {
                  const net::HandleType& handle_type, int max_conn_rbuf_size);
   ~PikaClientConn() = default;
 
-  bool IsInterceptedByRTC(std::string& opt);
-
-  void ProcessRedisCmds(const std::vector<net::RedisCmdArgsType>& argvs, bool async, std::string* response) override;
-
-  bool ReadCmdInCache(const net::RedisCmdArgsType& argv, const std::string& opt);
-  void BatchExecRedisCmd(const std::vector<net::RedisCmdArgsType>& argvs, bool cache_miss_in_rtc);
   int DealMessage(const net::RedisCmdArgsType& argv, std::string* response) override { return 0; }
-  static void DoBackgroundTask(void* arg);
 
   bool IsPubSub() { return is_pubsub_; }
   void SetIsPubSub(bool is_pubsub) { is_pubsub_ = is_pubsub; }
-  void SetCurrentDb(const std::string& db_name) { current_db_ = db_name; }
   void SetWriteCompleteCallback(WriteCompleteCallback cb) { write_completed_cb_ = std::move(cb); }
-  const std::string& GetCurrentTable() override { return current_db_; }
-
-  void DoAuth(const std::shared_ptr<User>& user);
-
-  void UnAuth(const std::shared_ptr<User>& user);
-
-  bool IsAuthed() const;
-
-  bool AuthRequired() const;
-
-  std::string UserName() const;
 
   // Txn
   std::queue<std::shared_ptr<Cmd>> GetTxnCmdQue();
@@ -115,7 +86,6 @@ class PikaClientConn : public net::RedisConn {
   bool IsTxnExecing(void);
 
   net::ServerThread* server_thread() { return server_thread_; }
-  void ClientInfoToString(std::string* info, const std::string& cmdName);
 
   std::atomic<int> resp_num;
   std::vector<std::shared_ptr<std::string>> resp_array;
@@ -123,7 +93,6 @@ class PikaClientConn : public net::RedisConn {
   std::shared_ptr<TimeStat> time_stat_;
  private:
   net::ServerThread* const server_thread_;
-  std::string current_db_;
   WriteCompleteCallback write_completed_cb_;
   bool is_pubsub_ = false;
   std::queue<std::shared_ptr<Cmd>> txn_cmd_que_;
@@ -132,13 +101,9 @@ class PikaClientConn : public net::RedisConn {
   std::mutex txn_state_mu_;
 
   bool authenticated_ = false;
-  std::shared_ptr<User> user_;
 
   std::shared_ptr<Cmd> DoCmd(const PikaCmdArgsType& argv, const std::string& opt,
                              const std::shared_ptr<std::string>& resp_ptr, bool cache_miss_in_rtc);
-
-  void ProcessSlowlog(const PikaCmdArgsType& argv, uint64_t do_duration);
-  void ProcessMonitor(const PikaCmdArgsType& argv);
 
   void ExecRedisCmd(const PikaCmdArgsType& argv, std::shared_ptr<std::string>& resp_ptr, bool cache_miss_in_rtc);
   void TryWriteResp();

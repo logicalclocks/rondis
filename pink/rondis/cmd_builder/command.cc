@@ -5,14 +5,14 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "kv.h"
 #include "command.h"
+#include "cmd_table_manager.h"
 
 using pstd::Status;
 
-extern PikaServer* g_pika_server;
-extern std::unique_ptr<PikaReplicaManager> g_pika_rm;
 extern std::unique_ptr<PikaCmdTableManager> g_pika_cmd_table_manager;
 
 void InitCmdTable(CmdTable* cmd_table) {
@@ -819,16 +819,13 @@ Cmd* GetCmdFromDB(const std::string& opt, const CmdTable& cmd_table) {
 
 bool Cmd::CheckArg(uint64_t num) const { return !((arity_ > 0 && num != arity_) || (arity_ < 0 && num < -arity_)); }
 
-Cmd::Cmd(std::string name, int arity, uint32_t flag, uint32_t aclCategory)
-    : name_(std::move(name)), arity_(arity), flag_(flag), aclCategory_(aclCategory), cache_missed_in_rtc_(false) {
+Cmd::Cmd(std::string name, int arity, uint32_t flag)
+    : name_(std::move(name)), arity_(arity), flag_(flag)), cache_missed_in_rtc_(false) {
 }
 
-void Cmd::Initial(const PikaCmdArgsType& argv, const std::string& db_name) {
+void Cmd::Initial(const PikaCmdArgsType& argv) {
   argv_ = argv;
-  db_name_ = db_name;
   res_.clear();  // Clear res content
-  db_ = g_pika_server->GetDB(db_name_);
-  sync_db_ = g_pika_rm->GetSyncMasterDBByName(DBInfo(db_name_));
   Clear();       // Clear cmd, Derived class can has own implement
   DoInitial();
 };
@@ -840,118 +837,16 @@ void Cmd::Execute() {
 }
 
 void Cmd::ProcessCommand(const HintKeys& hint_keys) {
-  if (stage_ == kNone) {
-    InternalProcessCommand(hint_keys);
+  if (stage_ == kExecuteStage) {
+    DoCommand(hint_keys);
   } else {
-    if (stage_ == kBinlogStage) {
-      DoBinlog();
-    } else if (stage_ == kExecuteStage) {
-      DoCommand(hint_keys);
-    }
-  }
-}
-
-void Cmd::InternalProcessCommand(const HintKeys& hint_keys) {
-  pstd::lock::MultiRecordLock record_lock(db_->LockMgr());
-  if (is_write()) {
-    record_lock.Lock(current_key());
-  }
-  uint64_t start_us = 0;
-  if (g_pika_conf->slowlog_slower_than() >= 0) {
-    start_us = pstd::NowMicros();
-  }
-
-  if (!IsSuspend()) {
-    db_->DBLockShared();
-  }
-
-  DoCommand(hint_keys);
-  if (g_pika_conf->slowlog_slower_than() >= 0) {
-    do_duration_ += pstd::NowMicros() - start_us;
-  }
-  DoBinlog();
-
-  if (!IsSuspend()) {
-    db_->DBUnlockShared();
-  }
-  if (is_write()) {
-    record_lock.Unlock(current_key());
+    // TODO (Vincent): Figure this out
+    exit(0);
   }
 }
 
 void Cmd::DoCommand(const HintKeys& hint_keys) {
-  if (IsNeedCacheDo()
-      && PIKA_CACHE_NONE != g_pika_conf->cache_mode()
-      && db_->cache()->CacheStatus() == PIKA_CACHE_STATUS_OK) {
-    if (!cache_missed_in_rtc_
-        && IsNeedReadCache()) {
-      ReadCache();
-    }
-    if (is_read()
-        && (res().CacheMiss() || cache_missed_in_rtc_)) {
-      pstd::lock::MultiScopeRecordLock record_lock(db_->LockMgr(), current_key());
-      DoThroughDB();
-      if (IsNeedUpdateCache()) {
-        DoUpdateCache();
-      }
-    } else if (is_write()) {
-      DoThroughDB();
-      if (IsNeedUpdateCache()) {
-        DoUpdateCache();
-      }
-    }
-  } else {
-    Do();
-  }
-}
-
-bool Cmd::DoReadCommandInCache() {
-  if (!IsSuspend()) {
-    db_->DBLockShared();
-  }
-  DEFER {
-    if (!IsSuspend()) {
-      db_->DBUnlockShared();
-    }
-  };
-
-  if (db_->cache()->CacheStatus() == PIKA_CACHE_STATUS_OK) {
-      if (IsNeedReadCache()) {
-        ReadCache();
-      }
-      // return true only the read command hit
-      if (is_read() && !res().CacheMiss()) {
-        return true;
-      }
-  }
-  return false;
-}
-
-
-void Cmd::DoBinlog() {
-  if (res().ok() && is_write() && g_pika_conf->write_binlog()) {
-    std::shared_ptr<net::NetConn> conn_ptr = GetConn();
-    std::shared_ptr<std::string> resp_ptr = GetResp();
-    // Consider that dummy cmd appended by system, both conn and resp are null.
-    if ((!conn_ptr || !resp_ptr) && (name_ != kCmdDummy)) {
-      if (!conn_ptr) {
-        LOG(WARNING) << sync_db_->SyncDBInfo().ToString() << " conn empty.";
-      }
-      if (!resp_ptr) {
-        LOG(WARNING) << sync_db_->SyncDBInfo().ToString() << " resp empty.";
-      }
-      res().SetRes(CmdRes::kErrOther);
-      return;
-    }
-
-    Status s = sync_db_->ConsensusProposeLog(shared_from_this());
-    if (!s.ok()) {
-      LOG(WARNING) << sync_db_->SyncDBInfo().ToString() << " Writing binlog failed, maybe no space left on device "
-                   << s.ToString();
-      res().SetRes(CmdRes::kErrOther, s.ToString());
-      return;
-    }
-  }
+  Do();
 }
 
 bool Cmd::hasFlag(uint32_t flag) const { return (flag_ & flag); }
@@ -976,42 +871,6 @@ bool Cmd::IsSuspend() const { return (flag_ & kCmdFlagsSuspend); }
 // std::string Cmd::CurrentSubCommand() const { return ""; };
 bool Cmd::HasSubCommand() const { return subCmdName_.size() > 0; };
 std::vector<std::string> Cmd::SubCommand() const { return subCmdName_; };
-bool Cmd::IsAdminRequire() const { return (flag_ & kCmdFlagsAdminRequire); }
-bool Cmd::IsNeedUpdateCache() const { return (flag_ & kCmdFlagsUpdateCache); }
-bool Cmd::IsNeedCacheDo() const {
-  if (g_pika_conf->IsCacheDisabledTemporarily()) {
-    return false;
-  }
-
-  if (hasFlag(kCmdFlagsKv)) {
-    if (!g_pika_conf->GetCacheString()) {
-      return false;
-    }
-  } else if (hasFlag(kCmdFlagsSet)) {
-    if (!g_pika_conf->GetCacheSet()) {
-      return false;
-    }
-  } else if (hasFlag(kCmdFlagsZset)) {
-    if (!g_pika_conf->GetCacheZset()) {
-      return false;
-    }
-  } else if (hasFlag(kCmdFlagsHash)) {
-    if (!g_pika_conf->GetCacheHash()) {
-      return false;
-    }
-  } else if (hasFlag(kCmdFlagsList)) {
-    if (!g_pika_conf->GetCacheList()) {
-      return false;
-    }
-  } else if (hasFlag(kCmdFlagsBit)) {
-    if (!g_pika_conf->GetCacheBit()) {
-      return false;
-    }
-  }
-  return (hasFlag(kCmdFlagsDoThroughDB));
-}
-
-bool Cmd::IsNeedReadCache() const { return hasFlag(kCmdFlagsReadCache); }
 
 bool Cmd::HashtagIsConsistent(const std::string& lhs, const std::string& rhs) const { return true; }
 
@@ -1022,9 +881,6 @@ std::string Cmd::db_name() const { return db_name_; }
 
 PikaCmdArgsType& Cmd::argv() { return argv_; }
 
-uint32_t Cmd::AclCategory() const { return aclCategory_; }
-
-void Cmd::AddAclCategory(uint32_t aclCategory) { aclCategory_ |= aclCategory; }
 uint32_t Cmd::flag() const { return flag_; }
 
 std::string Cmd::ToRedisProtocol() {
@@ -1048,10 +904,6 @@ void Cmd::LogCommand() const {
   }
   LOG(INFO) << "command:" << command;
 }
-
-void Cmd::SetConn(const std::shared_ptr<net::NetConn>& conn) { conn_ = conn; }
-
-std::shared_ptr<net::NetConn> Cmd::GetConn() { return conn_.lock(); }
 
 void Cmd::SetResp(const std::shared_ptr<std::string>& resp) { resp_ = resp; }
 
