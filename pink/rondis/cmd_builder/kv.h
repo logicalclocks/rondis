@@ -8,6 +8,8 @@
 
 #include "command.h"
 
+#define DISABLE_CMDS_SECTION 0
+
 /*
  * kv
  */
@@ -43,7 +45,7 @@ class SetCmd : public Cmd {
     condition_ = kNONE;
   }
   std::string ToRedisProtocol() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class GetCmd : public Cmd {
@@ -68,8 +70,10 @@ class GetCmd : public Cmd {
   std::string value_;
   int64_t ttl_millsec_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
+
+#if DISABLE_CMDS_SECTION
 
 class DelCmd : public Cmd {
  public:
@@ -88,7 +92,7 @@ class DelCmd : public Cmd {
   std::vector<std::string> keys_;
   int64_t split_res_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class IncrCmd : public Cmd {
@@ -111,7 +115,7 @@ class IncrCmd : public Cmd {
   std::string key_;
   int64_t new_value_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
   int64_t expired_timestamp_millsec_ = 0;
   std::string ToRedisProtocol() override;
 };
@@ -136,7 +140,7 @@ class IncrbyCmd : public Cmd {
   std::string key_;
   int64_t by_ = 0, new_value_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
   int64_t expired_timestamp_millsec_ = 0;
   std::string ToRedisProtocol() override;
 };
@@ -161,7 +165,7 @@ class IncrbyfloatCmd : public Cmd {
   std::string key_, value_, new_value_;
   double by_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
   int64_t expired_timestamp_millsec_ = 0;
   std::string ToRedisProtocol() override;
 };
@@ -186,7 +190,7 @@ class DecrCmd : public Cmd {
   std::string key_;
   int64_t new_value_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class DecrbyCmd : public Cmd {
@@ -209,7 +213,7 @@ class DecrbyCmd : public Cmd {
   std::string key_;
   int64_t by_ = 0, new_value_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class GetsetCmd : public Cmd {
@@ -232,7 +236,7 @@ class GetsetCmd : public Cmd {
   std::string key_;
   std::string new_value_;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class AppendCmd : public Cmd {
@@ -256,7 +260,7 @@ class AppendCmd : public Cmd {
   std::string value_;
   std::string new_value_;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
   int64_t expired_timestamp_millsec_ = 0;
   std::string ToRedisProtocol() override;
 };
@@ -287,7 +291,7 @@ class MgetCmd : public Cmd {
   std::vector<storage::ValueStatus> split_res_;
   std::vector<storage::ValueStatus> db_value_status_array_;
   std::vector<storage::ValueStatus> cache_value_status_array_;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class KeysCmd : public Cmd {
@@ -304,7 +308,7 @@ class KeysCmd : public Cmd {
   storage::DataType type_{storage::DataType::kAll};
   void DoInitial() override;
   void Clear() override { type_ = storage::DataType::kAll; }
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class SetnxCmd : public Cmd {
@@ -326,7 +330,7 @@ class SetnxCmd : public Cmd {
   std::string value_;
   int32_t success_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
   std::string ToRedisProtocol() override;
 };
 
@@ -351,7 +355,7 @@ class SetexCmd : public Cmd {
   int64_t ttl_sec_ = 0;
   std::string value_;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
   std::string ToRedisProtocol() override;
 };
 
@@ -376,7 +380,7 @@ class PsetexCmd : public Cmd {
   int64_t ttl_millsec = 0;
   std::string value_;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
   std::string ToRedisProtocol() override;
 };
 
@@ -399,7 +403,7 @@ class DelvxCmd : public Cmd {
   std::string value_;
   int32_t success_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class MsetCmd : public Cmd {
@@ -432,7 +436,7 @@ class MsetCmd : public Cmd {
   void DoInitial() override;
   // used for write binlog
   std::shared_ptr<SetCmd> set_cmd_;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class MsetnxCmd : public Cmd {
@@ -489,7 +493,7 @@ class GetrangeCmd : public Cmd {
   int64_t end_ = 0;
   std::string value_;
   int64_t sec_ = 0;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
   void DoInitial() override;
 };
 
@@ -514,7 +518,7 @@ class SetrangeCmd : public Cmd {
   int64_t offset_ = 0;
   std::string value_;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class StrlenCmd : public Cmd {
@@ -539,7 +543,7 @@ class StrlenCmd : public Cmd {
   std::string value_;
   int64_t ttl_millsec = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class ExistsCmd : public Cmd {
@@ -581,7 +585,7 @@ class ExpireCmd : public Cmd {
   int64_t ttl_sec_ = 0;
   void DoInitial() override;
   std::string ToRedisProtocol() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class PexpireCmd : public Cmd {
@@ -605,7 +609,7 @@ class PexpireCmd : public Cmd {
   int64_t ttl_millsec = 0;
   void DoInitial() override;
   std::string ToRedisProtocol() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class ExpireatCmd : public Cmd {
@@ -628,7 +632,7 @@ class ExpireatCmd : public Cmd {
   std::string key_;
   int64_t time_stamp_sec_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class PexpireatCmd : public Cmd {
@@ -651,7 +655,7 @@ class PexpireatCmd : public Cmd {
   std::string key_;
   int64_t time_stamp_millsec_ = 0;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class TtlCmd : public Cmd {
@@ -673,7 +677,7 @@ class TtlCmd : public Cmd {
  private:
   std::string key_;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class PttlCmd : public Cmd {
@@ -695,7 +699,7 @@ class PttlCmd : public Cmd {
  private:
   std::string key_;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class PersistCmd : public Cmd {
@@ -717,7 +721,7 @@ class PersistCmd : public Cmd {
  private:
   std::string key_;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class TypeCmd : public Cmd {
@@ -739,7 +743,7 @@ class TypeCmd : public Cmd {
  private:
   std::string key_;
   void DoInitial() override;
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class ScanCmd : public Cmd {
@@ -762,7 +766,7 @@ class ScanCmd : public Cmd {
     count_ = 10;
     type_ = storage::DataType::kAll;
   }
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class ScanxCmd : public Cmd {
@@ -784,7 +788,7 @@ class ScanxCmd : public Cmd {
     pattern_ = "*";
     count_ = 10;
   }
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class PKSetexAtCmd : public Cmd {
@@ -809,7 +813,7 @@ class PKSetexAtCmd : public Cmd {
   int64_t time_stamp_sec_ = 0;
   void DoInitial() override;
   void Clear() override { time_stamp_sec_ = 0; }
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class PKScanRangeCmd : public Cmd {
@@ -839,7 +843,7 @@ class PKScanRangeCmd : public Cmd {
     limit_ = 10;
     string_with_value = false;
   }
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
 
 class PKRScanRangeCmd : public Cmd {
@@ -869,6 +873,8 @@ class PKRScanRangeCmd : public Cmd {
     limit_ = 10;
     string_with_value = false;
   }
-  rocksdb::Status s_;
+//   rocksdb::Status s_;
 };
+#endif
+
 #endif
