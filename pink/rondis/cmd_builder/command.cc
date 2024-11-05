@@ -6,26 +6,8 @@
 #include <memory>
 #include <utility>
 
-#include <glog/logging.h>
-#include "include/pika_acl.h"
-#include "include/pika_admin.h"
-#include "include/pika_bit.h"
-#include "include/pika_command.h"
-#include "include/pika_geo.h"
-#include "include/pika_hash.h"
-#include "include/pika_hyperloglog.h"
-#include "include/pika_kv.h"
-#include "include/pika_list.h"
-#include "include/pika_pubsub.h"
-#include "include/pika_rm.h"
-#include "include/pika_server.h"
-#include "include/pika_set.h"
-#include "include/pika_slot_command.h"
-#include "include/pika_stream.h"
-#include "include/pika_transaction.h"
-#include "include/pika_zset.h"
-#include "pstd_defer.h"
-#include "src/pstd/include/scope_record_lock.h"
+#include "kv.h"
+#include "command.h"
 
 using pstd::Status;
 

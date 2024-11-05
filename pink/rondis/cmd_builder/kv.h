@@ -6,10 +6,7 @@
 #ifndef PIKA_KV_H_
 #define PIKA_KV_H_
 
-#include "storage/storage.h"
-#include "include/pika_db.h"
-#include "include/acl.h"
-#include "include/pika_command.h"
+#include "command.h"
 
 /*
  * kv

@@ -12,13 +12,6 @@
 #include <unordered_set>
 #include <utility>
 
-#include "rocksdb/status.h"
-
-#include "net/include/net_conn.h"
-#include "net/include/redis_conn.h"
-#include "pstd/include/pstd_string.h"
-
-#include "net/src/dispatch_thread.h"
 
 class SyncMasterDB;
 class SyncSlaveDB;
