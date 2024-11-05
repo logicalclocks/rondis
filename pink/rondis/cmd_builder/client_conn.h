@@ -9,9 +9,7 @@
 #include <bitset>
 #include <utility>
 
-#include "acl.h"
-#include "include/pika_command.h"
-#include "include/pika_define.h"
+#include "command.h"
 
 // TODO: stat time costing in write out data to connfd
 struct TimeStat {

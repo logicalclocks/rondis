@@ -3,14 +3,11 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "include/pika_kv.h"
 #include <memory>
 
-#include "include/pika_command.h"
-#include "include/pika_slot_command.h"
-#include "include/pika_cache.h"
-#include "include/pika_conf.h"
-#include "pstd/include/pstd_string.h"
+#include "kv.h"
+#include "command.h"
+
 
 extern std::unique_ptr<PikaConf> g_pika_conf;
 /* SET key value [NX] [XX] [EX <seconds>] [PX <milliseconds>] */

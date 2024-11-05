@@ -3,22 +3,12 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include <fmt/format.h>
-#include <glog/logging.h>
 #include <utility>
 #include <vector>
 
-#include "include/pika_admin.h"
-#include "include/pika_client_conn.h"
-#include "include/pika_cmd_table_manager.h"
-#include "include/pika_command.h"
-#include "include/pika_conf.h"
-#include "include/pika_define.h"
-#include "include/pika_rm.h"
-#include "include/pika_server.h"
-#include "net/src/dispatch_thread.h"
-#include "net/src/worker_thread.h"
-#include "src/pstd/include/scope_record_lock.h"
+#include "command.h"
+#include "cmd_table_manager.h"
+#include "client_conn.h"
 
 extern std::unique_ptr<PikaConf> g_pika_conf;
 extern PikaServer* g_pika_server;
