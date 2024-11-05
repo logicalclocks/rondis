@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include "slash_string.h"
+
 #include "kv.h"
 #include "command.h"
 
@@ -41,7 +43,7 @@ void SetCmd::DoInitial() {
         res_.SetRes(CmdRes::kSyntaxErr);
         return;
       }
-      if (pstd::string2int(argv_[index].data(), argv_[index].size(), &ttl_millsec) == 0) {
+      if (slash::string2int(argv_[index].data(), argv_[index].size(), &ttl_millsec) == 0) {
         res_.SetRes(CmdRes::kInvalidInt);
         return;
       }
@@ -118,7 +120,7 @@ std::string SetCmd::ToRedisProtocol() {
 
     // TODO 精度损失
     auto time_stamp = time(nullptr) + ttl_millsec / 1000;
-    pstd::ll2string(buf, 100, time_stamp);
+    slash::ll2string(buf, 100, time_stamp);
     std::string at(buf);
     RedisAppendLenUint64(content, at.size(), "$");
     RedisAppendContent(content, at);
@@ -253,7 +255,7 @@ std::string IncrCmd::ToRedisProtocol() {
   // time_stamp
   char buf[100];
   auto time_stamp = expired_timestamp_millsec_ > 0 ? expired_timestamp_millsec_ / 1000 : expired_timestamp_millsec_;
-  pstd::ll2string(buf, sizeof(buf), time_stamp);
+  slash::ll2string(buf, sizeof(buf), time_stamp);
   std::string at(buf);
   RedisAppendLenUint64(content, at.size(), "$");
   RedisAppendContent(content, at);
@@ -270,7 +272,7 @@ void IncrbyCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &by_) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &by_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt, kCmdNameIncrby);
     return;
   }
@@ -311,7 +313,7 @@ std::string IncrbyCmd::ToRedisProtocol() {
   // time_stamp
   char buf[100];
   auto time_stamp = expired_timestamp_millsec_ > 0 ? expired_timestamp_millsec_ / 1000 : expired_timestamp_millsec_;
-  pstd::ll2string(buf, sizeof(buf), time_stamp);
+  slash::ll2string(buf, sizeof(buf), time_stamp);
   std::string at(buf);
   RedisAppendLenUint64(content, at.size(), "$");
   RedisAppendContent(content, at);
@@ -329,7 +331,7 @@ void IncrbyfloatCmd::DoInitial() {
   }
   key_ = argv_[1];
   value_ = argv_[2];
-  if (pstd::string2d(argv_[2].data(), argv_[2].size(), &by_) == 0) {
+  if (slash::string2d(argv_[2].data(), argv_[2].size(), &by_) == 0) {
     res_.SetRes(CmdRes::kInvalidFloat);
     return;
   }
@@ -371,7 +373,7 @@ std::string IncrbyfloatCmd::ToRedisProtocol() {
   // time_stamp
   char buf[100];
   auto time_stamp = expired_timestamp_millsec_ > 0 ? expired_timestamp_millsec_ / 1000 : expired_timestamp_millsec_;
-  pstd::ll2string(buf, sizeof(buf), time_stamp);
+  slash::ll2string(buf, sizeof(buf), time_stamp);
   std::string at(buf);
   RedisAppendLenUint64(content, at.size(), "$");
   RedisAppendContent(content, at);
@@ -415,7 +417,7 @@ void DecrbyCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &by_) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &by_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -513,7 +515,7 @@ std::string AppendCmd::ToRedisProtocol() {
   // time_stamp
   char buf[100];
   auto time_stamp = expired_timestamp_millsec_ > 0 ? expired_timestamp_millsec_ / 1000 : expired_timestamp_millsec_;
-  pstd::ll2string(buf, sizeof(buf), time_stamp);
+  slash::ll2string(buf, sizeof(buf), time_stamp);
   std::string at(buf);
   RedisAppendLenUint64(content, at.size(), "$");
   RedisAppendContent(content, at);
@@ -742,7 +744,7 @@ void SetexCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &ttl_sec_) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &ttl_sec_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -780,7 +782,7 @@ std::string SetexCmd::ToRedisProtocol() {
   // time_stamp
   char buf[100];
   auto time_stamp = time(nullptr) + ttl_sec_;
-  pstd::ll2string(buf, 100, time_stamp);
+  slash::ll2string(buf, 100, time_stamp);
   std::string at(buf);
   RedisAppendLenUint64(content, at.size(), "$");
   RedisAppendContent(content, at);
@@ -796,7 +798,7 @@ void PsetexCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &ttl_millsec) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &ttl_millsec) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -832,8 +834,8 @@ std::string PsetexCmd::ToRedisProtocol() {
   RedisAppendContent(content, key_);
   // time_stamp
   char buf[100];
-  auto time_stamp = pstd::NowMillis() + ttl_millsec;
-  pstd::ll2string(buf, 100, time_stamp);
+  auto time_stamp = slash::NowMillis() + ttl_millsec;
+  slash::ll2string(buf, 100, time_stamp);
   std::string at(buf);
   RedisAppendLenUint64(content, at.size(), "$");
   RedisAppendContent(content, at);
@@ -962,11 +964,11 @@ void GetrangeCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &start_) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &start_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
-  if (pstd::string2int(argv_[3].data(), argv_[3].size(), &end_) == 0) {
+  if (slash::string2int(argv_[3].data(), argv_[3].size(), &end_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -1017,7 +1019,7 @@ void SetrangeCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &offset_) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &offset_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -1134,7 +1136,7 @@ void ExpireCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &ttl_sec_) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &ttl_sec_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -1166,7 +1168,7 @@ std::string ExpireCmd::ToRedisProtocol() {
   // sec
   char buf[100];
   int64_t expireat = time(nullptr) + ttl_sec_;
-  pstd::ll2string(buf, 100, expireat);
+  slash::ll2string(buf, 100, expireat);
   std::string at(buf);
   RedisAppendLenUint64(content, at.size(), "$");
   RedisAppendContent(content, at);
@@ -1183,7 +1185,7 @@ void PexpireCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &ttl_millsec) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &ttl_millsec) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -1214,8 +1216,8 @@ std::string PexpireCmd::ToRedisProtocol() {
   RedisAppendContent(content, key_);
   // sec
   char buf[100];
-  int64_t expireat = pstd::NowMillis() + ttl_millsec;
-  pstd::ll2string(buf, 100, expireat);
+  int64_t expireat = slash::NowMillis() + ttl_millsec;
+  slash::ll2string(buf, 100, expireat);
   std::string at(buf);
   RedisAppendLenUint64(content, at.size(), "$");
   RedisAppendContent(content, at);
@@ -1232,7 +1234,7 @@ void ExpireatCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &time_stamp_sec_) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &time_stamp_sec_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -1259,7 +1261,7 @@ void PexpireatCmd::DoInitial() {
     return;
   }
   key_ = argv_[1];
-  if (pstd::string2int(argv_[2].data(), argv_[2].size(), &time_stamp_millsec_) == 0) {
+  if (slash::string2int(argv_[2].data(), argv_[2].size(), &time_stamp_millsec_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -1406,7 +1408,7 @@ void ScanCmd::DoInitial() {
     res_.SetRes(CmdRes::kWrongNum, kCmdNameScan);
     return;
   }
-  if (pstd::string2int(argv_[1].data(), argv_[1].size(), &cursor_) == 0) {
+  if (slash::string2int(argv_[1].data(), argv_[1].size(), &cursor_) == 0) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -1439,7 +1441,7 @@ void ScanCmd::DoInitial() {
         } else {
           res_.SetRes(CmdRes::kSyntaxErr);
         }
-      } else if ((pstd::string2int(argv_[index].data(), argv_[index].size(), &count_) == 0) || count_ <= 0) {
+      } else if ((slash::string2int(argv_[index].data(), argv_[index].size(), &count_) == 0) || count_ <= 0) {
         res_.SetRes(CmdRes::kInvalidInt);
         return;
       }
@@ -1474,7 +1476,7 @@ void ScanCmd::Do() {
   res_.AppendArrayLen(2);
 
   char buf[32];
-  int len = pstd::ll2string(buf, sizeof(buf), cursor_ret);
+  int len = slash::ll2string(buf, sizeof(buf), cursor_ret);
   res_.AppendStringLen(len);
   res_.AppendContent(buf);
 
@@ -1515,7 +1517,7 @@ void ScanxCmd::DoInitial() {
       }
       if (strcasecmp(opt.data(), "match") == 0) {
         pattern_ = argv_[index];
-      } else if ((pstd::string2int(argv_[index].data(), argv_[index].size(), &count_) == 0) || count_ <= 0) {
+      } else if ((slash::string2int(argv_[index].data(), argv_[index].size(), &count_) == 0) || count_ <= 0) {
         res_.SetRes(CmdRes::kInvalidInt);
         return;
       }
@@ -1554,7 +1556,7 @@ void PKSetexAtCmd::DoInitial() {
   }
   key_ = argv_[1];
   value_ = argv_[3];
-  if ((pstd::string2int(argv_[2].data(), argv_[2].size(), &time_stamp_sec_) == 0) || time_stamp_sec_ >= INT32_MAX) {
+  if ((slash::string2int(argv_[2].data(), argv_[2].size(), &time_stamp_sec_) == 0) || time_stamp_sec_ >= INT32_MAX) {
     res_.SetRes(CmdRes::kInvalidInt);
     return;
   }
@@ -1617,7 +1619,7 @@ void PKScanRangeCmd::DoInitial() {
       }
       if (strcasecmp(opt.data(), "match") == 0) {
         pattern_ = argv_[index];
-      } else if ((pstd::string2int(argv_[index].data(), argv_[index].size(), &limit_) == 0) || limit_ <= 0) {
+      } else if ((slash::string2int(argv_[index].data(), argv_[index].size(), &limit_) == 0) || limit_ <= 0) {
         res_.SetRes(CmdRes::kInvalidInt);
         return;
       }
@@ -1702,7 +1704,7 @@ void PKRScanRangeCmd::DoInitial() {
       }
       if (strcasecmp(opt.data(), "match") == 0) {
         pattern_ = argv_[index];
-      } else if ((pstd::string2int(argv_[index].data(), argv_[index].size(), &limit_) == 0) || limit_ <= 0) {
+      } else if ((slash::string2int(argv_[index].data(), argv_[index].size(), &limit_) == 0) || limit_ <= 0) {
         res_.SetRes(CmdRes::kInvalidInt);
         return;
       }
