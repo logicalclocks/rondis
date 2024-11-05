@@ -98,10 +98,6 @@ void SetCmd::Do() {
   }
 }
 
-void SetCmd::DoThroughDB() {
-  Do();
-}
-
 std::string SetCmd::ToRedisProtocol() {
   if (condition_ == SetCmd::kEXORPX) {
     std::string content;
@@ -165,11 +161,6 @@ void GetCmd::ReadCache() {
   }
 }
 
-void GetCmd::DoThroughDB() {
-  res_.clear();
-  Do();
-}
-
 #if DISABLE_CMDS_SECTION
 
 void DelCmd::DoInitial() {
@@ -194,10 +185,6 @@ void DelCmd::Do() {
     res_.SetRes(CmdRes::kErrOther, "delete error");
     s_ = rocksdb::Status::Corruption("delete error");
   }
-}
-
-void DelCmd::DoThroughDB() {
-  Do();
 }
 
 void DelCmd::Split(const HintKeys& hint_keys) {
@@ -234,10 +221,6 @@ void IncrCmd::Do() {
   } else {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
-}
-
-void IncrCmd::DoThroughDB() {
-  Do();
 }
 
 std::string IncrCmd::ToRedisProtocol() {
@@ -292,10 +275,6 @@ void IncrbyCmd::Do() {
   } else {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
-}
-
-void IncrbyCmd::DoThroughDB() {
-  Do();
 }
 
 std::string IncrbyCmd::ToRedisProtocol() {
@@ -354,10 +333,6 @@ void IncrbyfloatCmd::Do() {
   }
 }
 
-void IncrbyfloatCmd::DoThroughDB() {
-  Do();
-}
-
 std::string IncrbyfloatCmd::ToRedisProtocol() {
   std::string content;
   content.reserve(RAW_ARGS_LEN);
@@ -407,10 +382,6 @@ void DecrCmd::Do() {
   }
 }
 
-void DecrCmd::DoThroughDB() {
-  Do();
-}
-
 void DecrbyCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNameDecrby);
@@ -437,10 +408,6 @@ void DecrbyCmd::Do() {
   } else {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
-}
-
-void DecrbyCmd::DoThroughDB() {
-  Do();
 }
 
 void GetsetCmd::DoInitial() {
@@ -470,10 +437,6 @@ void GetsetCmd::Do() {
   }
 }
 
-void GetsetCmd::DoThroughDB() {
-  Do();
-}
-
 void AppendCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNameAppend);
@@ -494,10 +457,6 @@ void AppendCmd::Do() {
   } else {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
-}
-
-void AppendCmd::DoThroughDB() {
-  Do();
 }
 
 std::string AppendCmd::ToRedisProtocol() {
@@ -597,11 +556,6 @@ void MgetCmd::Merge() {
       res_.AppendContent("$-1");
     }
   }
-}
-
-void MgetCmd::DoThroughDB() {
-  res_.clear();
-  Do();
 }
 
 void MgetCmd::ReadCache() {
@@ -763,10 +717,6 @@ void SetexCmd::Do() {
   }
 }
 
-void SetexCmd::DoThroughDB() {
-  Do();
-}
-
 std::string SetexCmd::ToRedisProtocol() {
   std::string content;
   content.reserve(RAW_ARGS_LEN);
@@ -814,10 +764,6 @@ void PsetexCmd::Do() {
   } else {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
-}
-
-void PsetexCmd::DoThroughDB() {
-  Do();
 }
 
 std::string PsetexCmd::ToRedisProtocol() {
@@ -894,10 +840,6 @@ void MsetCmd::Do() {
   } else {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
-}
-
-void MsetCmd::DoThroughDB() {
-  Do();
 }
 
 void MsetCmd::Split(const HintKeys& hint_keys) {
@@ -998,21 +940,6 @@ void GetrangeCmd::ReadCache() {
   }
 }
 
-void GetrangeCmd::DoThroughDB() {
-  res_.clear();
-  std::string substr;
-  s_ = db_->storage()->GetrangeWithValue(key_, start_, end_, &substr, &value_, &sec_);
-  if (s_.ok()) {
-    res_.AppendStringLen(substr.size());
-    res_.AppendContent(substr);
-  } else if (s_.IsNotFound()) {
-    res_.AppendStringLen(substr.size());
-    res_.AppendContent(substr);
-  } else {
-    res_.SetRes(CmdRes::kErrOther, s_.ToString());
-  }
-}
-
 void SetrangeCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNameSetrange);
@@ -1037,10 +964,6 @@ void SetrangeCmd::Do() {
   } else {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
-}
-
-void SetrangeCmd::DoThroughDB() {
-  Do();
 }
 
 void StrlenCmd::DoInitial() {
@@ -1070,16 +993,6 @@ void StrlenCmd::ReadCache() {
     res_.AppendInteger(len);
   } else {
     res_.SetRes(CmdRes::kCacheMiss);
-  }
-}
-
-void StrlenCmd::DoThroughDB() {
-  res_.clear();
-  s_ = db_->storage()->GetWithTTL(key_, &value_, &ttl_millsec);
-  if (s_.ok() || s_.IsNotFound()) {
-    res_.AppendInteger(value_.size());
-  } else {
-    res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
 }
 
@@ -1123,11 +1036,6 @@ void ExistsCmd::ReadCache() {
   } else {
     res_.SetRes(CmdRes::kCacheMiss);
   }
-}
-
-void ExistsCmd::DoThroughDB() {
-  res_.clear();
-  Do();
 }
 
 void ExpireCmd::DoInitial() {
@@ -1175,10 +1083,6 @@ std::string ExpireCmd::ToRedisProtocol() {
   return content;
 }
 
-void ExpireCmd::DoThroughDB() {
-  Do();
-}
-
 void PexpireCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNamePexpire);
@@ -1224,10 +1128,6 @@ std::string PexpireCmd::ToRedisProtocol() {
   return content;
 }
 
-void PexpireCmd::DoThroughDB() {
-  Do();
-}
-
 void ExpireatCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNameExpireat);
@@ -1251,10 +1151,6 @@ void ExpireatCmd::Do() {
   }
 }
 
-void ExpireatCmd::DoThroughDB() {
-  Do();
-}
-
 void PexpireatCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNamePexpireat);
@@ -1276,10 +1172,6 @@ void PexpireatCmd::Do() {
     res_.SetRes(CmdRes::kErrOther, "pexpireat internal error");
     s_ = rocksdb::Status::Corruption("pexpireat internal error");
   }
-}
-
-void PexpireatCmd::DoThroughDB() {
-  Do();
 }
 
 void TtlCmd::DoInitial() {
@@ -1310,11 +1202,6 @@ void TtlCmd::ReadCache() {
   }
 }
 
-void TtlCmd::DoThroughDB() {
-  res_.clear();
-  Do();
-}
-
 void PttlCmd::DoInitial() {
   if (!CheckArg(argv_.size())) {
     res_.SetRes(CmdRes::kWrongNum, kCmdNamePttl);
@@ -1334,11 +1221,6 @@ void PttlCmd::Do() {
 
 void PttlCmd::ReadCache() {
   // redis cache don't support pttl cache, so read directly from db
-  DoThroughDB();
-}
-
-void PttlCmd::DoThroughDB() {
-  res_.clear();
   Do();
 }
 
@@ -1359,10 +1241,6 @@ void PersistCmd::Do() {
     res_.SetRes(CmdRes::kErrOther, "persist internal error");
     s_ = rocksdb::Status::Corruption("persist internal error");
   }
-}
-
-void PersistCmd::DoThroughDB() {
-  Do();
 }
 
 void TypeCmd::DoInitial() {
@@ -1396,11 +1274,6 @@ void TypeCmd::ReadCache() {
   } else {
     res_.SetRes(CmdRes::kCacheMiss, s.ToString());
   }
-}
-
-void TypeCmd::DoThroughDB() {
-  res_.clear();
-  Do();
 }
 
 void ScanCmd::DoInitial() {
@@ -1571,10 +1444,6 @@ void PKSetexAtCmd::Do() {
   } else {
     res_.SetRes(CmdRes::kErrOther, s_.ToString());
   }
-}
-
-void PKSetexAtCmd::DoThroughDB() {
-  Do();
 }
 
 void PKScanRangeCmd::DoInitial() {
