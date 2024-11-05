@@ -15,36 +15,19 @@ class PikaClientConn : public pink::RedisConn {
  public:
   using WriteCompleteCallback = std::function<void()>;
 
-  struct TxnStateBitMask {
-   public:
-    static constexpr uint8_t Start = 0;
-    static constexpr uint8_t InitCmdFailed = 1;
-    static constexpr uint8_t WatchFailed = 2;
-    static constexpr uint8_t Execing = 3;
-  };
-
   PikaClientConn(int fd, const std::string& ip_port, pink::Thread* server_thread, pink::NetMultiplexer* mpx,
                  const pink::HandleType& handle_type, int max_conn_rbuf_size);
   ~PikaClientConn() = default;
 
   int DealMessage(const pink::RedisCmdArgsType& argv, std::string* response) override { return 0; }
 
-  bool IsPubSub() { return is_pubsub_; }
-  void SetIsPubSub(bool is_pubsub) { is_pubsub_ = is_pubsub; }
   void SetWriteCompleteCallback(WriteCompleteCallback cb) { write_completed_cb_ = std::move(cb); }
 
   // Txn
   std::queue<std::shared_ptr<Cmd>> GetTxnCmdQue();
   void PushCmdToQue(std::shared_ptr<Cmd> cmd);
   void ClearTxnCmdQue();
-  void SetTxnWatchFailState(bool is_failed);
-  void SetTxnInitFailState(bool is_failed);
-  void SetTxnStartState(bool is_start);
   void ExitTxn();
-  bool IsInTxn();
-  bool IsTxnInitFailed();
-  bool IsTxnWatchFailed();
-  bool IsTxnExecing(void);
 
   pink::ServerThread* server_thread() { return server_thread_; }
 
@@ -68,15 +51,5 @@ class PikaClientConn : public pink::RedisConn {
   void ExecRedisCmd(const pink::RedisCmdArgsType& argv, std::shared_ptr<std::string>& resp_ptr, bool cache_miss_in_rtc);
   void TryWriteResp();
 };
-
-struct ClientInfo {
-  int fd;
-  std::string ip_port;
-  int64_t last_interaction = 0;
-  std::shared_ptr<PikaClientConn> conn;
-};
-
-extern bool AddrCompare(const ClientInfo& lhs, const ClientInfo& rhs);
-extern bool IdleCompare(const ClientInfo& lhs, const ClientInfo& rhs);
 
 #endif

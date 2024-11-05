@@ -64,41 +64,6 @@ void PikaClientConn::TryWriteResp() {
 
 void PikaClientConn::PushCmdToQue(std::shared_ptr<Cmd> cmd) { txn_cmd_que_.push(cmd); }
 
-bool PikaClientConn::IsInTxn() {
-  std::lock_guard<std::mutex> lg(txn_state_mu_);
-  return txn_state_[TxnStateBitMask::Start];
-}
-
-bool PikaClientConn::IsTxnInitFailed() {
-  std::lock_guard<std::mutex> lg(txn_state_mu_);
-  return txn_state_[TxnStateBitMask::InitCmdFailed];
-}
-
-bool PikaClientConn::IsTxnWatchFailed() {
-  std::lock_guard<std::mutex> lg(txn_state_mu_);
-  return txn_state_[TxnStateBitMask::WatchFailed];
-}
-
-bool PikaClientConn::IsTxnExecing() {
-  std::lock_guard<std::mutex> lg(txn_state_mu_);
-  return txn_state_[TxnStateBitMask::Execing] && txn_state_[TxnStateBitMask::Start];
-}
-
-void PikaClientConn::SetTxnWatchFailState(bool is_failed) {
-  std::lock_guard<std::mutex> lg(txn_state_mu_);
-  txn_state_[TxnStateBitMask::WatchFailed] = is_failed;
-}
-
-void PikaClientConn::SetTxnInitFailState(bool is_failed) {
-  std::lock_guard<std::mutex> lg(txn_state_mu_);
-  txn_state_[TxnStateBitMask::InitCmdFailed] = is_failed;
-}
-
-void PikaClientConn::SetTxnStartState(bool is_start) {
-  std::lock_guard<std::mutex> lg(txn_state_mu_);
-  txn_state_[TxnStateBitMask::Start] = is_start;
-}
-
 void PikaClientConn::ClearTxnCmdQue() { txn_cmd_que_ = std::queue<std::shared_ptr<Cmd>>{}; }
 
 void PikaClientConn::ExitTxn() {
@@ -127,8 +92,3 @@ void PikaClientConn::ExecRedisCmd(const pink::RedisCmdArgsType& argv, std::share
 }
 
 std::queue<std::shared_ptr<Cmd>> PikaClientConn::GetTxnCmdQue() { return txn_cmd_que_; }
-
-// compare addr in ClientInfo
-bool AddrCompare(const ClientInfo& lhs, const ClientInfo& rhs) { return rhs.ip_port < lhs.ip_port; }
-
-bool IdleCompare(const ClientInfo& lhs, const ClientInfo& rhs) { return lhs.last_interaction < rhs.last_interaction; }
