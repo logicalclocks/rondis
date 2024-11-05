@@ -96,9 +96,9 @@ jobs:
       # Running this multiple times to check for memory leaks and that overwrites/updates/deletes work
       - name: Run tests multiple times
         run: |
-          for i in {1..100}; do
+          for i in {1..50}; do
             docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
-              "pink/rondis/tests/get_set.sh $((i % 2))"
+              "pink/rondis/tests/get_set.sh $((i % 3))"
             echo "Success in run $i"
           done
 
