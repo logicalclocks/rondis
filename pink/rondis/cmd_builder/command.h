@@ -495,7 +495,6 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
   virtual std::vector<std::string> current_key() const;
   virtual void Execute();
   virtual void Do() {};
-  virtual void DoThroughDB() {}
   virtual void ReadCache() {}
   virtual Cmd* Clone() = 0;
   // used for execute multikey command into different slots

@@ -25,7 +25,7 @@ class SetCmd : public Cmd {
   }
   void Do() override;
 
-  void DoThroughDB() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new SetCmd(*this); }
@@ -58,7 +58,7 @@ class GetCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void ReadCache() override;
   void Split(const HintKeys& hint_keys) override{};
@@ -80,7 +80,7 @@ class DelCmd : public Cmd {
   DelCmd(const std::string& name, int arity, uint32_t flag)
       : Cmd(name, arity, flag, static_cast<uint32_t>(AclCategory::KEYSPACE)){};
   void Do() override;
-  void DoThroughDB() override;
+
 
   std::vector<std::string> current_key() const override { return keys_; }
   void Split(const HintKeys& hint_keys) override;
@@ -104,7 +104,7 @@ class IncrCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -129,7 +129,7 @@ class IncrbyCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -154,7 +154,7 @@ class IncrbyfloatCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -179,7 +179,7 @@ class DecrCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -202,7 +202,7 @@ class DecrbyCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -225,7 +225,7 @@ class GetsetCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -248,7 +248,7 @@ class AppendCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -270,7 +270,7 @@ class MgetCmd : public Cmd {
       : Cmd(name, arity, flag, static_cast<uint32_t>(AclCategory::STRING)){};
   void Do() override;
   void ReadCache() override;
-  void DoThroughDB() override;
+
 
   std::vector<std::string> current_key() const override { return keys_; }
   void Split(const HintKeys& hint_keys) override;
@@ -343,7 +343,7 @@ class SetexCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -368,7 +368,7 @@ class PsetexCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -416,7 +416,7 @@ class MsetCmd : public Cmd {
   }
 
   void Do() override;
-  void DoThroughDB() override;
+
 
   std::vector<std::string> current_key() const override {
     std::vector<std::string> res;
@@ -478,7 +478,7 @@ class GetrangeCmd : public Cmd {
   }
   void Do() override;
   void ReadCache() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -504,7 +504,7 @@ class SetrangeCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -529,7 +529,7 @@ class StrlenCmd : public Cmd {
   }
   void Do() override;
   void ReadCache() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -549,7 +549,7 @@ class ExistsCmd : public Cmd {
       : Cmd(name, arity, flag, static_cast<uint32_t>(AclCategory::KEYSPACE)) {}
   void Do() override;
   void ReadCache() override;
-  void DoThroughDB() override;
+
   std::vector<std::string> current_key() const override { return keys_; }
   void Split(const HintKeys& hint_keys) override;
   void Merge() override;
@@ -571,7 +571,7 @@ class ExpireCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -595,7 +595,7 @@ class PexpireCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -619,7 +619,7 @@ class ExpireatCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -642,7 +642,7 @@ class PexpireatCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -666,7 +666,7 @@ class TtlCmd : public Cmd {
   }
   void Do() override;
   void ReadCache() override;
-  void DoThroughDB() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new TtlCmd(*this); }
@@ -688,7 +688,7 @@ class PttlCmd : public Cmd {
   }
   void Do() override;
   void ReadCache() override;
-  void DoThroughDB() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new PttlCmd(*this); }
@@ -709,7 +709,7 @@ class PersistCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
@@ -732,7 +732,7 @@ class TypeCmd : public Cmd {
   }
   void Do() override;
   void ReadCache() override;
-  void DoThroughDB() override;
+
   void Split(const HintKeys& hint_keys) override{};
   void Merge() override{};
   Cmd* Clone() override { return new TypeCmd(*this); }
@@ -798,7 +798,7 @@ class PKSetexAtCmd : public Cmd {
     return res;
   }
   void Do() override;
-  void DoThroughDB() override;
+
 
   void Split(const HintKeys& hint_keys) override {};
   void Merge() override {};
