@@ -12,6 +12,9 @@
 #include <unordered_set>
 #include <utility>
 
+#include "pink/include/pink_conn.h"
+#include "pink/include/redis_conn.h"
+#include "pink/include/pink_thread.h"
 
 class SyncMasterDB;
 class SyncSlaveDB;
@@ -247,7 +250,6 @@ const std::string kClusterPrefix = "pkcluster";
  */
 constexpr const char* ErrTypeMessage = "Invalid argument: WRONGTYPE";
 
-using PikaCmdArgsType = net::RedisCmdArgsType;
 static const int RAW_ARGS_LEN = 1024 * 1024;
 
 enum CmdFlagsMask {
@@ -502,7 +504,7 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
 
   int8_t SubCmdIndex(const std::string& cmdName);  // if the command no subCommand，return -1；
 
-  void Initial(const PikaCmdArgsType& argv);
+  void Initial(const pink::RedisCmdArgsType& argv);
   uint32_t flag() const;
   bool hasFlag(uint32_t flag) const;
   bool is_read() const;
@@ -523,7 +525,7 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
   std::string name() const;
   CmdRes& res();
   std::string db_name() const;
-  PikaCmdArgsType& argv();
+  pink::RedisCmdArgsType& argv();
   virtual std::string ToRedisProtocol();
 
   void SetResp(const std::shared_ptr<std::string>& resp);
@@ -543,7 +545,6 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
   // Cmd(const Cmd&);
   void ProcessCommand(const HintKeys& hint_key = HintKeys());
   void DoCommand(const HintKeys& hint_key);
-  void LogCommand() const;
 
   std::string name_;
   int arity_ = -2;
@@ -553,7 +554,7 @@ class Cmd : public std::enable_shared_from_this<Cmd> {
 
  protected:
   CmdRes res_;
-  PikaCmdArgsType argv_;
+  pink::RedisCmdArgsType argv_;
   std::string db_name_;
 //   rocksdb::Status s_;
   std::shared_ptr<DB> db_;
@@ -584,7 +585,7 @@ void RedisAppendContent(std::string& str, const std::string& value) {
 
 void RedisAppendLen(std::string& str, int64_t ori, const std::string& prefix) {
   char buf[32];
-  pstd::ll2string(buf, 32, static_cast<long long>(ori));
+  slash::ll2string(buf, 32, static_cast<long long>(ori));
   str.append(prefix);
   str.append(buf);
   str.append(kNewLine);

@@ -11,7 +11,7 @@
 #include "command.h"
 #include "cmd_table_manager.h"
 
-using pstd::Status;
+using slash::Status;
 
 extern std::unique_ptr<PikaCmdTableManager> g_pika_cmd_table_manager;
 
@@ -820,10 +820,10 @@ Cmd* GetCmdFromDB(const std::string& opt, const CmdTable& cmd_table) {
 bool Cmd::CheckArg(uint64_t num) const { return !((arity_ > 0 && num != arity_) || (arity_ < 0 && num < -arity_)); }
 
 Cmd::Cmd(std::string name, int arity, uint32_t flag)
-    : name_(std::move(name)), arity_(arity), flag_(flag)), cache_missed_in_rtc_(false) {
+    : name_(std::move(name)), arity_(arity), flag_(flag), cache_missed_in_rtc_(false) {
 }
 
-void Cmd::Initial(const PikaCmdArgsType& argv) {
+void Cmd::Initial(const pink::RedisCmdArgsType& argv) {
   argv_ = argv;
   res_.clear();  // Clear res content
   Clear();       // Clear cmd, Derived class can has own implement
@@ -879,7 +879,7 @@ CmdRes& Cmd::res() { return res_; }
 
 std::string Cmd::db_name() const { return db_name_; }
 
-PikaCmdArgsType& Cmd::argv() { return argv_; }
+pink::RedisCmdArgsType& Cmd::argv() { return argv_; }
 
 uint32_t Cmd::flag() const { return flag_; }
 
@@ -894,15 +894,6 @@ std::string Cmd::ToRedisProtocol() {
   }
 
   return content;
-}
-
-void Cmd::LogCommand() const {
-  std::string command;
-  for (const auto& item : argv_) {
-    command.append(" ");
-    command.append(item);
-  }
-  LOG(INFO) << "command:" << command;
 }
 
 void Cmd::SetResp(const std::shared_ptr<std::string>& resp) { resp_ = resp; }
