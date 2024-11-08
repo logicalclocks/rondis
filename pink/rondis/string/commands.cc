@@ -6,8 +6,55 @@
 #include <ndbapi/Ndb.hpp>
 
 #include "db_operations.h"
+#include "commands.h"
 #include "../common.h"
 #include "table_definitions.h"
+
+bool setup_transaction(
+    Ndb *ndb,
+    const pink::RedisCmdArgsType &argv,
+    std::string *response,
+    struct key_table *key_row,
+    const char *key_str,
+    Uint32 key_len,
+    const NdbDictionary::Dictionary **ret_dict,
+    const NdbDictionary::Table **ret_tab,
+    NdbTransaction **ret_trans)
+{
+    if (key_len > MAX_KEY_VALUE_LEN)
+    {
+        assign_generic_err_to_response(response, REDIS_KEY_TOO_LARGE);
+        return false;
+    }
+    const NdbDictionary::Dictionary *dict = ndb->getDictionary();
+    if (dict == nullptr)
+    {
+        assign_ndb_err_to_response(response, FAILED_GET_DICT, ndb->getNdbError());
+        return false;
+    }
+    const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
+    if (tab == nullptr)
+    {
+        assign_ndb_err_to_response(response, FAILED_CREATE_TABLE_OBJECT, dict->getNdbError());
+        return false;
+    }
+    memcpy(&key_row->redis_key[2], key_str, key_len);
+    set_length((char*)&key_row->redis_key[0], key_len);
+    NdbTransaction *trans = ndb->startTransaction(tab,
+                                                  &key_row->redis_key[0],
+                                                  key_len + 2);
+    if (trans == nullptr)
+    {
+        assign_ndb_err_to_response(response,
+                                   FAILED_CREATE_TXN_OBJECT,
+                                   ndb->getNdbError());
+        return false;
+    }
+    *ret_tab = tab;
+    *ret_trans = trans;
+    *ret_dict = dict;
+    return true;
+}
 
 /*
     A successful GET will return in this format:
@@ -27,45 +74,22 @@ void rondb_get_command(Ndb *ndb,
                        const pink::RedisCmdArgsType &argv,
                        std::string *response)
 {
-    Uint32 key_len = argv[1].size();
-    if (key_len > MAX_KEY_VALUE_LEN)
-    {
-        assign_generic_err_to_response(response, REDIS_KEY_TOO_LARGE);
-        return;
-    }
-    const char *key_str = argv[1].c_str();
-
-    const NdbDictionary::Dictionary *dict = ndb->getDictionary();
-    const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
-    if (tab == nullptr)
-    {
-        assign_ndb_err_to_response(response,
-                                   FAILED_CREATE_TABLE_OBJECT,
-                                   dict->getNdbError());
-        return;
-    }
-
+    const NdbDictionary::Dictionary *dict;
+    const NdbDictionary::Table *tab = nullptr;
+    NdbTransaction *trans = nullptr;
     struct key_table key_row;
-    // varbinary -> first 2 bytes are length if bigger than 255
-    // start copying from 3rd byte
-    memcpy(&key_row.redis_key[2], key_str, key_len);
-    // Length as little endian
-    Uint8 *ptr = (Uint8 *)&key_row.redis_key[0];
-    ptr[0] = Uint8(key_len & 255);
-    ptr[1] = Uint8(key_len >> 8);
-
-    // This is (usually) a local operation to calculate the correct data node, using the
-    // hash of the pk value.
-    NdbTransaction *trans = ndb->startTransaction(tab,
-                                                  &(key_row.redis_key[0]),
-                                                  key_len + 2);
-    if (trans == nullptr)
-    {
-        assign_ndb_err_to_response(response,
-                                   FAILED_CREATE_TXN_OBJECT,
-                                   ndb->getNdbError());
-        return;
-    }
+    const char *key_str = argv[1].c_str();
+    Uint32 key_len = argv[1].size();
+    if (!setup_transaction(ndb,
+                           argv,
+                           response,
+                           &key_row,
+                           key_str,
+                           key_len,
+                           &dict,
+                           &tab,
+                           &trans))
+      return;
 
     int ret_code = get_simple_key_row(
         response,
@@ -81,22 +105,11 @@ void rondb_get_command(Ndb *ndb,
     }
     printf("Getting %d value rows\n", key_row.num_rows);
     {
-        // For some reason this needs to be used from scratch
-        struct key_table key_row;
-        // varbinary -> first 2 bytes are length if bigger than 255
-        // start copying from 3rd byte
-        memcpy(&key_row.redis_key[2], key_str, key_len);
-        // Length as little endian
-        Uint8 *ptr = (Uint8 *)&key_row.redis_key[0];
-        ptr[0] = Uint8(key_len & 255);
-        ptr[1] = Uint8(key_len >> 8);
-
         /*
             Our value uses value rows, so a more complex read is required.
             We're starting from scratch here since we'll use a shared lock
             on the key table this time we read from it.
         */
-
         NdbTransaction *trans = ndb->startTransaction(tab,
                                                       &(key_row.redis_key[0]),
                                                       key_len + 2);
@@ -124,37 +137,25 @@ void rondb_set_command(
     const pink::RedisCmdArgsType &argv,
     std::string *response)
 {
-    Uint32 key_len = argv[1].size();
-    if (key_len > MAX_KEY_VALUE_LEN)
-    {
-        assign_generic_err_to_response(response, REDIS_KEY_TOO_LARGE);
-        return;
-    }
-
+    const NdbDictionary::Dictionary *dict;
+    const NdbDictionary::Table *tab = nullptr;
+    NdbTransaction *trans = nullptr;
+    struct key_table key_row;
     const char *key_str = argv[1].c_str();
+    Uint32 key_len = argv[1].size();
+    if (!setup_transaction(ndb,
+                           argv,
+                           response,
+                           &key_row,
+                           key_str,
+                           key_len,
+                           &dict,
+                           &tab,
+                           &trans))
+      return;
+
     const char *value_str = argv[2].c_str();
     Uint32 value_len = argv[2].size();
-
-    const NdbDictionary::Dictionary *dict = ndb->getDictionary();
-    if (dict == nullptr)
-    {
-        assign_ndb_err_to_response(response, FAILED_GET_DICT, ndb->getNdbError());
-        return;
-    }
-    const NdbDictionary::Table *tab = dict->getTable(KEY_TABLE_NAME);
-    if (tab == nullptr)
-    {
-        assign_ndb_err_to_response(response, FAILED_CREATE_TABLE_OBJECT, dict->getNdbError());
-        return;
-    }
-
-    NdbTransaction *trans = ndb->startTransaction(tab, key_str, key_len);
-    if (trans == nullptr)
-    {
-        assign_ndb_err_to_response(response, FAILED_CREATE_TXN_OBJECT, ndb->getNdbError());
-        return;
-    }
-
     char varsize_param[EXTENSION_VALUE_LEN + 500];
     Uint32 num_value_rows = 0;
     Uint64 rondb_key = 0;
@@ -213,7 +214,9 @@ void rondb_set_command(
                 is best done via a cascade delete. We do a delete & insert in
                 a single transaction (plus writing the value rows).
             */
-            trans = ndb->startTransaction(tab, key_str, key_len);
+            NdbTransaction *trans = ndb->startTransaction(tab,
+                                                          &(key_row.redis_key[0]),
+                                                          key_len + 2);
             if (trans == nullptr)
             {
                 assign_ndb_err_to_response(response, FAILED_CREATE_TXN_OBJECT, ndb->getNdbError());
@@ -246,7 +249,6 @@ void rondb_set_command(
         return;
     }
     printf("Inserting %d value rows\n", num_value_rows);
-
     create_all_value_rows(response,
                           ndb,
                           dict,
@@ -256,6 +258,37 @@ void rondb_set_command(
                           value_len,
                           num_value_rows,
                           &varsize_param[0]);
+    ndb->closeTransaction(trans);
+    return;
+}
+
+void rondb_incr_command(
+    Ndb *ndb,
+    const pink::RedisCmdArgsType &argv,
+    std::string *response)
+{
+    const NdbDictionary::Dictionary *dict;
+    const NdbDictionary::Table *tab = nullptr;
+    NdbTransaction *trans = nullptr;
+    struct key_table key_row;
+    const char *key_str = argv[1].c_str();
+    Uint32 key_len = argv[1].size();
+    if (!setup_transaction(ndb,
+                           argv,
+                           response,
+                           &key_row,
+                           key_str,
+                           key_len,
+                           &dict,
+                           &tab,
+                           &trans))
+      return;
+
+    incr_key_row(response,
+                 ndb,
+                 tab,
+                 trans,
+                 &key_row);
     ndb->closeTransaction(trans);
     return;
 }

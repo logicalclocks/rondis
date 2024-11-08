@@ -241,10 +241,10 @@ void HolyThread::DoCronTask() {
       ++iter;
     }
   }
-  for (const auto conn : to_close) {
+  for (const auto & conn : to_close) {
     CloseFd(conn);
   }
-  for (const auto conn : to_timeout) {
+  for (const auto & conn : to_timeout) {
     CloseFd(conn);
     handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
   }

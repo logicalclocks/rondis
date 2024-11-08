@@ -101,4 +101,32 @@ done
 # edge_value=$(head -c 100000 < /dev/zero | tr '\0' 'b')
 # set_and_get "$KEY:edge_large" "$edge_value"
 
+incr_key="$key:incr$RANDOM"
+incr_output=$(redis-cli INCR "$incr_key")
+incr_result=$(redis-cli GET "$incr_key")
+if [[ "$incr_result" == 1 ]]; then
+    echo "PASS: Incrementing non-existing key $incr_key "
+else
+    echo "FAIL: Incrementing non-existing key $incr_key"
+    echo "Expected: 1"
+    echo "Received: $incr_result"
+    exit 1
+fi
+
+incr_start_value=$RANDOM
+set_and_get "$incr_key" $incr_start_value
+for i in {1..10}; do
+    incr_output=$(redis-cli INCR "$incr_key")
+    incr_result=$(redis-cli GET "$incr_key")
+    incr_expected_value=$((incr_start_value + i))
+    if [[ "$incr_result" == $incr_expected_value ]]; then
+        echo "PASS: Incrementing key $incr_key to value $incr_result"
+    else
+        echo "FAIL: Incrementing key $incr_key from value $incr_start_value"
+        echo "Expected: $incr_expected_value"
+        echo "Received: $incr_result"
+        exit 1
+    fi
+done
+
 echo "All tests completed."

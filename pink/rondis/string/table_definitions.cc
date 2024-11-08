@@ -55,8 +55,7 @@ int init_key_records(NdbDictionary::Dictionary *dict)
     }
 
     std::map<const NdbDictionary::Column *, std::pair<size_t, int>> read_all_column_map = {
-        // TODO: Fix this one
-        // {redis_key_col, {offsetof(struct key_table, redis_key), 0}},
+        {redis_key_col, {offsetof(struct key_table, redis_key), 0}},
         {rondb_key_col, {offsetof(struct key_table, rondb_key), 0}},
         {expiry_date_col, {offsetof(struct key_table, expiry_date), 1}},
         {value_start_col, {offsetof(struct key_table, value_start), 0}},

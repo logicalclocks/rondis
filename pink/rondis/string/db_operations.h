@@ -5,6 +5,9 @@
 #include <ndbapi/NdbApi.hpp>
 #include <ndbapi/Ndb.hpp>
 
+#ifndef STRING_DB_OPERATIONS_H
+#define STRING_DB_OPERATIONS_H
+
 const Uint32 ROWS_PER_READ = 2;
 
 int create_key_row(std::string *response,
@@ -122,3 +125,10 @@ int rondb_get_rondb_key(const NdbDictionary::Table *tab,
                         Uint64 &key_id,
                         Ndb *ndb,
                         std::string *response);
+
+void incr_key_row(std::string *response,
+                  Ndb *ndb,
+                  const NdbDictionary::Table *tab,
+                  NdbTransaction *trans,
+                  struct key_table *key_row);
+#endif

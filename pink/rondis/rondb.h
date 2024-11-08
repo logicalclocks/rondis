@@ -3,6 +3,9 @@
 #include <ndbapi/NdbApi.hpp>
 #include <ndbapi/Ndb.hpp>
 
+#ifndef RONDIS_RONDB_H
+#define RONDIS_RONDB_H
+
 extern std::vector<Ndb *> ndb_objects;
 
 int initialize_ndb_objects(const char *connect_string, int num_ndb_objects);
@@ -14,3 +17,4 @@ void rondb_end();
 int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                         std::string *response,
                         int fd);
+#endif

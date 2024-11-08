@@ -115,7 +115,7 @@ static void SignalSetup()
 int main(int argc, char *argv[])
 {
     int port = 6379;
-    char *connect_string = "localhost:13000";
+    const char *connect_string = "localhost:13000";
     int worker_threads = 2;
     if (argc != 4)
     {

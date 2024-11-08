@@ -1,6 +1,8 @@
 #include <ndbapi/NdbApi.hpp>
 #include <ndbapi/Ndb.hpp>
 
+#ifndef STRING_TABLE_DEFINITIONS_H
+#define STRING_TABLE_DEFINITIONS_H
 /*
     NdbRecords are used for serialization. They map columns of a table to fields in a struct.
     For each table we interact with, we define:
@@ -35,6 +37,7 @@ extern NdbRecord *entire_key_record;
 
 struct key_table
 {
+    Uint32 null_bits;
     char redis_key[MAX_KEY_VALUE_LEN + 2];
     Uint64 rondb_key;
     Uint32 expiry_date;
@@ -82,3 +85,4 @@ int init_record(NdbDictionary::Dictionary *dict,
                 NdbRecord *&record);
 
 int init_string_records(NdbDictionary::Dictionary *dict);
+#endif

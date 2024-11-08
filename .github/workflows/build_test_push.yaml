@@ -23,7 +23,7 @@ jobs:
     needs: [build-pink-macos]
     runs-on: ubuntu-latest
     env:
-      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
+      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-24.10.0-linux-glibc2.28-x86_64.tar.gz
       RONDB_PATH: /tmp/rondb
       IMAGE_NAME: rondis:latest
       CONTAINER_NAME: rondis

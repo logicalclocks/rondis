@@ -32,8 +32,8 @@
         }
     },
     "containerEnv": {
-        "RONDB_PATH": "/usr/src/app/rondb-22.10.5-linux-glibc2.28-arm64_v8",
+        "RONDB_PATH": "/usr/src/app/rondb-24.10.0-linux-glibc2.28-arm64_v8",
         // This assumes that the RonDB tarball is placed the root of the workspace folder
-        "LD_LIBRARY_PATH": "/usr/src/app/rondb-22.10.5-linux-glibc2.28-arm64_v8/lib"
+        "LD_LIBRARY_PATH": "/usr/src/app/rondb-24.10.0-linux-glibc2.28-arm64_v8/lib"
     }
 }

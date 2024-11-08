@@ -34,9 +34,9 @@ class RedisConn: public PinkConn {
             const int rbuf_max_len = REDIS_MAX_MESSAGE);
   virtual ~RedisConn();
 
-  virtual ReadStatus GetRequest();
-  virtual WriteStatus SendReply();
-  virtual int WriteResp(const std::string& resp);
+  virtual ReadStatus GetRequest() override;
+  virtual WriteStatus SendReply() override;
+  virtual int WriteResp(const std::string& resp) override;
 
   void TryResizeBuffer() override;
   void SetHandleType(const HandleType& handle_type);
