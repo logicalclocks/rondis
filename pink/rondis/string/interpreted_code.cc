@@ -2,6 +2,7 @@
 #include <ndbapi/Ndb.hpp>
 
 #include "../common.h"
+#include "commands.h"
 #include "interpreted_code.h"
 #include "table_definitions.h"
 
@@ -77,6 +78,155 @@ int initNdbCodeIncr(std::string *response,
         assign_ndb_err_to_response(response,
                                    "Failed to create Interpreted code",
                                    code->getNdbError());
+        return -1;
+    }
+    return 0;
+}
+
+int write_hset_key_table(Ndb *ndb,
+                         const NdbDictionary::Table *tab,
+                         std::string std_key_str,
+                         Uint64 & redis_key_id,
+                         std::string *response) {
+    /* Prepare primary key */
+    struct hset_key_table key_row;
+    const char *key_str = std_key_str.c_str();
+    Uint32 key_len = std_key_str.size();
+    set_length(&key_row.redis_key[0], key_len);
+    memcpy(&key_row.redis_key[2], key_str, key_len);
+
+    const Uint32 mask = 0x1; // Write primary key
+    const unsigned char *mask_ptr = (const unsigned char *)&mask;
+    const NdbDictionary::Column *redis_key_id_col = tab->getColumn(HSET_KEY_TABLE_COL_redis_key_id);
+    Uint32 code_buffer[64];
+    NdbInterpretedCode code(tab, &code_buffer[0], sizeof(code_buffer));
+    code.load_op_type(REG1);                          // Read operation type into register 1
+    code.branch_eq_const(REG1, RONDB_INSERT, LABEL0); // Inserts go to label 0
+    /* UPDATE */
+    code.read_attr(REG7, redis_key_id_col);
+    code.write_interpreter_output(REG7, OUTPUT_INDEX); // Write into output index 0
+    code.interpret_exit_ok();
+
+    /* INSERT */
+    code.def_label(LABEL0);
+    code.load_const_u64(REG7, redis_key_id);
+    code.write_attr(redis_key_id_col, REG7);
+    code.write_interpreter_output(REG7, OUTPUT_INDEX); // Write into output index 0
+    code.interpret_exit_ok();
+
+    // Program end, now compile code
+    int ret_code = code.finalise();
+    if (ret_code != 0)
+    {
+        assign_ndb_err_to_response(response,
+                                   "Failed to create Interpreted code",
+                                   code.getNdbError());
+        return -1;
+    }
+    // Prepare the interpreted program to be part of the write
+    NdbOperation::OperationOptions opts;
+    std::memset(&opts, 0, sizeof(opts));
+    opts.optionsPresent |= NdbOperation::OperationOptions::OO_INTERPRETED;
+    opts.optionsPresent |= NdbOperation::OperationOptions::OO_INTERPRETED_INSERT;
+    opts.interpretedCode = &code;
+
+    NdbOperation::GetValueSpec getvals[1];
+    getvals[0].appStorage = nullptr;
+    getvals[0].recAttr = nullptr;
+    getvals[0].column = NdbDictionary::Column::READ_INTERPRETER_OUTPUT_0;
+    opts.optionsPresent |= NdbOperation::OperationOptions::OO_GET_FINAL_VALUE;
+    opts.numExtraGetFinalValues = 1;
+    opts.extraGetFinalValues = getvals;
+
+    /* Start a transaction */
+    NdbTransaction *trans = ndb->startTransaction(tab,
+                                                  (const char*)&key_row.redis_key_id,
+                                                  key_len + 2);
+    /* Define the actual operation to be sent to RonDB data node. */
+    const NdbOperation *op = trans->writeTuple(
+        pk_hset_key_record,
+        (const char *)&key_row,
+        entire_hset_key_record,
+        (char *)&key_row,
+        mask_ptr,
+        &opts,
+        sizeof(opts));
+    if (op == nullptr)
+    {
+        ndb->closeTransaction(trans);
+        assign_ndb_err_to_response(response,
+                                   "Failed to create NdbOperation",
+                                   trans->getNdbError());
+        return -1;
+    }
+    if (trans->execute(NdbTransaction::Commit,
+                       NdbOperation::AbortOnError) != 0 ||
+        trans->getNdbError().code != 0)
+    {
+        ndb->closeTransaction(trans);
+        assign_ndb_err_to_response(response,
+                                   FAILED_HSET_KEY,
+                                   trans->getNdbError());
+        return -1;
+    }
+    /* Retrieve the returned new value as an Uint64 value */
+    NdbRecAttr *recAttr = getvals[0].recAttr;
+    redis_key_id = recAttr->u_64_value();
+    ndb->closeTransaction(trans);
+    return 0;
+}
+
+int write_key_row_no_commit(std::string *response,
+                            NdbInterpretedCode &code,
+                            const NdbDictionary::Table *tab) {
+    const NdbDictionary::Column *num_rows_col = tab->getColumn(KEY_TABLE_COL_num_rows);
+    code.load_op_type(REG1);                          // Read operation type into register 1
+    code.branch_eq_const(REG1, RONDB_INSERT, LABEL0); // Inserts go to label 0
+    /* UPDATE */
+    code.read_attr(REG7, num_rows_col);
+    code.write_interpreter_output(REG7, OUTPUT_INDEX); // Write into output index 0
+    code.interpret_exit_ok();
+
+    /* INSERT */
+    code.def_label(LABEL0);
+    code.load_const_u16(REG7, 0);
+    code.write_interpreter_output(REG7, OUTPUT_INDEX); // Write into output index 0
+    code.interpret_exit_ok();
+
+    // Program end, now compile code
+    int ret_code = code.finalise();
+    if (ret_code != 0)
+    {
+        assign_ndb_err_to_response(response,
+                                   "Failed to create Interpreted code",
+                                   code.getNdbError());
+        return -1;
+    }
+    return 0;
+}
+
+int write_key_row_commit(std::string *response,
+                         NdbInterpretedCode &code,
+                         const NdbDictionary::Table *tab) {
+    const NdbDictionary::Column *num_rows_col = tab->getColumn(KEY_TABLE_COL_num_rows);
+    code.load_op_type(REG1);                          // Read operation type into register 1
+    code.branch_eq_const(REG1, RONDB_INSERT, LABEL0); // Inserts go to label 0
+    /* UPDATE */
+    code.read_attr(REG7, num_rows_col);
+    code.branch_eq_const(REG7, 0, LABEL0);
+    code.interpret_exit_nok(6000);
+
+    /* INSERT */
+    code.def_label(LABEL0);
+    code.interpret_exit_ok();
+
+    // Program end, now compile code
+    int ret_code = code.finalise();
+    if (ret_code != 0)
+    {
+        assign_ndb_err_to_response(response,
+                                   "Failed to create Interpreted code",
+                                   code.getNdbError());
         return -1;
     }
     return 0;

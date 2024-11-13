@@ -1,6 +1,7 @@
-CREATE TABLE redis.string_keys(
+CREATE TABLE string_keys(
     -- Redis actually supports a max key size of 512MiB,
     -- but we choose not to support that here
+    redis_key_id BIGINT UNSIGNED NOT NULL,
     redis_key VARBINARY(3000) NOT NULL,
     -- This is to save space when referencing the key in the value table
     rondb_key BIGINT UNSIGNED AUTO_INCREMENT NULL,
@@ -14,10 +15,10 @@ CREATE TABLE redis.string_keys(
     num_rows INT UNSIGNED NOT NULL,
     value_start VARBINARY(26500) NOT NULL,
     -- Redis supports get/set of seconds/milliseconds
-    expiry_date INT UNSIGNED,
+    expiry_date INT UNSIGNED NOT NULL,
     -- Easier to sort and delete keys this way
     KEY expiry_index(expiry_date),
-    PRIMARY KEY (redis_key) USING HASH,
+    PRIMARY KEY (redis_key_id, redis_key) USING HASH,
     UNIQUE KEY (rondb_key) USING HASH
 ) ENGINE NDB -- Each CHAR will use 1 byte
 CHARSET = latin1 COMMENT = "NDB_TABLE=PARTITION_BALANCE=FOR_RP_BY_LDM_X_8";

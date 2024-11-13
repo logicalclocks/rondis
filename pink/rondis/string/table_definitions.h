@@ -10,12 +10,34 @@
     - one NdbRecord defining the columns we want to fetch
 */
 
+#define MAX_VALUES_TO_WRITE 4
+#define MAX_KEY_VALUE_LEN 3000
+#define STRING_REDIS_KEY_ID 0
+
 /*
-    KEY TABLE
+    HSET KEY TABLE
+*/
+#define HSET_KEY_TABLE_NAME "hset_keys"
+
+int init_hset_key_records(NdbDictionary::Dictionary *dict);
+
+extern NdbRecord *pk_hset_key_record;
+extern NdbRecord *entire_hset_key_record;
+
+#define HSET_KEY_TABLE_COL_redis_key "redis_key"
+#define HSET_KEY_TABLE_COL_redis_key_id "redis_key_id"
+
+struct hset_key_table
+{
+    Uint64 redis_key_id;
+    char redis_key[MAX_KEY_VALUE_LEN + 2];
+};
+
+/*
+    KEY AND FIELD TABLE
 */
 
 #define KEY_TABLE_NAME "string_keys"
-#define MAX_KEY_VALUE_LEN 3000
 #define INLINE_VALUE_LEN 26500
 
 int init_key_records(NdbDictionary::Dictionary *dict);
@@ -27,6 +49,7 @@ extern NdbRecord *entire_key_record;
     Doing this instead of reflection; Keep these the same
     as the field names in the key_table struct.
 */
+#define KEY_TABLE_COL_redis_key_id "redis_key_id"
 #define KEY_TABLE_COL_redis_key "redis_key"
 #define KEY_TABLE_COL_rondb_key "rondb_key"
 #define KEY_TABLE_COL_expiry_date "expiry_date"
@@ -38,6 +61,7 @@ extern NdbRecord *entire_key_record;
 struct key_table
 {
     Uint32 null_bits;
+    Uint64 redis_key_id;
     char redis_key[MAX_KEY_VALUE_LEN + 2];
     Uint64 rondb_key;
     Uint32 expiry_date;

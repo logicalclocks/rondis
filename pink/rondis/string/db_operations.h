@@ -11,60 +11,40 @@
 const Uint32 ROWS_PER_READ = 2;
 
 int create_key_row(std::string *response,
-                   Ndb *ndb,
                    const NdbDictionary::Table *tab,
                    NdbTransaction *trans,
+                   Uint64 redis_key_id,
                    Uint64 rondb_key,
                    const char *key_str,
                    Uint32 key_len,
                    const char *value_str,
                    Uint32 tot_value_len,
                    Uint32 num_value_rows,
-                   Uint32 row_state,
-                   char *buf);
+                   Uint32 &prev_num_rows,
+                   Uint32 row_state);
 
-void write_data_to_key_op(NdbOperation *ndb_op,
-                          Uint64 rondb_key,
-                          const char *key_str,
-                          Uint32 key_len,
-                          const char *value_str,
-                          Uint32 tot_value_len,
-                          Uint32 num_value_rows,
-                          Uint32 row_state,
-                          char *buf);
-
-int delete_and_insert_key_row(std::string *response,
-                              Ndb *ndb,
-                              const NdbDictionary::Table *tab,
-                              NdbTransaction *trans,
-                              Uint64 rondb_key,
-                              const char *key_str,
-                              Uint32 key_len,
-                              const char *value_str,
-                              Uint32 tot_value_len,
-                              Uint32 num_value_rows,
-                              Uint32 row_state,
-                              char *buf);
+int write_data_to_key_op(std::string *response,
+                         const NdbOperation **ndb_op,
+                         const NdbDictionary::Table *tab,
+                         NdbTransaction *trans,
+                         Uint64 redis_key_id,
+                         Uint64 rondb_key,
+                         const char *key_str,
+                         Uint32 key_len,
+                         const char *value_str,
+                         Uint32 tot_value_len,
+                         Uint32 num_value_rows,
+                         Uint32 &prev_num_rows,
+                         Uint32 row_state,
+                         NdbRecAttr **recAttr);
 
 int delete_key_row(std::string *response,
                    Ndb *ndb,
                    const NdbDictionary::Table *tab,
                    NdbTransaction *trans,
+                   Uint64 redis_key_id,
                    const char *key_str,
                    Uint32 key_len,
-                   char *buf);
-
-int insert_key_row(std::string *response,
-                   Ndb *ndb,
-                   const NdbDictionary::Table *tab,
-                   NdbTransaction *trans,
-                   Uint64 rondb_key,
-                   const char *key_str,
-                   Uint32 key_len,
-                   const char *value_str,
-                   Uint32 tot_value_len,
-                   Uint32 num_value_rows,
-                   Uint32 row_state,
                    char *buf);
 
 int create_value_row(std::string *response,
@@ -87,6 +67,12 @@ int create_all_value_rows(std::string *response,
                           Uint32 num_value_rows,
                           char *buf);
 
+int delete_value_rows(std::string *response,
+                      const NdbDictionary::Table *tab,
+                      NdbTransaction *trans,
+                      Uint64 rondb_key,
+                      Uint32 start_ordinal,
+                      Uint32 end_ordinal);
 /*
     Since the beginning of the value is saved within the key table, it
     can suffice to read the key table to get the value. If the value is
@@ -95,16 +81,14 @@ int get_simple_key_row(std::string *response,
                        const NdbDictionary::Table *tab,
                        Ndb *ndb,
                        NdbTransaction *trans,
-                       struct key_table *key_row,
-                       Uint32 key_len);
+                       struct key_table *key_row);
 
 int get_complex_key_row(std::string *response,
                         const NdbDictionary::Dictionary *dict,
                         const NdbDictionary::Table *tab,
                         Ndb *ndb,
                         NdbTransaction *trans,
-                        struct key_table *row,
-                        Uint32 key_len);
+                        struct key_table *row);
 
 int get_value_rows(std::string *response,
                    Ndb *ndb,
@@ -131,4 +115,10 @@ void incr_key_row(std::string *response,
                   const NdbDictionary::Table *tab,
                   NdbTransaction *trans,
                   struct key_table *key_row);
+
+int rondb_get_redis_key_id(Ndb *ndb,
+                           Uint64 &redis_key_id,
+                           const char *key_str,
+                           Uint32 key_len,
+                           std::string *response);
 #endif

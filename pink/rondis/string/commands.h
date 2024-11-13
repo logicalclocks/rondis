@@ -22,9 +22,6 @@
     Most importantly, it writes Ndb error messages to the response string. This may
     however change in the future, since this causes redundancy.
 */
-void set_length(char* buf, Uint32 key_len);
-Uint32 get_length(char* buf);
-
 void rondb_get_command(Ndb *ndb,
                        const pink::RedisCmdArgsType &argv,
                        std::string *response);
@@ -34,6 +31,18 @@ void rondb_set_command(Ndb *ndb,
                        std::string *response);
 
 void rondb_incr_command(Ndb *ndb,
+                        const pink::RedisCmdArgsType &argv,
+                        std::string *response);
+
+void rondb_hget_command(Ndb *ndb,
+                       const pink::RedisCmdArgsType &argv,
+                       std::string *response);
+
+void rondb_hset_command(Ndb *ndb,
+                       const pink::RedisCmdArgsType &argv,
+                       std::string *response);
+
+void rondb_hincr_command(Ndb *ndb,
                         const pink::RedisCmdArgsType &argv,
                         std::string *response);
 #endif

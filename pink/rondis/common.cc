@@ -25,3 +25,19 @@ void assign_generic_err_to_response(
     std::cout << buf;
     response->assign(buf);
 }
+
+void set_length(char *buf, Uint32 key_len)
+{
+    Uint8 *ptr = (Uint8 *)buf;
+    ptr[0] = (Uint8)(key_len & 255);
+    ptr[1] = (Uint8)(key_len >> 8);
+}
+
+Uint32 get_length(char *buf)
+{
+    Uint8 *ptr = (Uint8 *)buf;
+    Uint8 low = ptr[0];
+    Uint8 high = ptr[1];
+    Uint32 len32 = Uint32(low) + Uint32(256) * Uint32(high);
+    return len32;
+}

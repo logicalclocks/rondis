@@ -197,6 +197,45 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                 assign_generic_err_to_response(response, error_message);
             }
         }
+        else if (strcasecmp(command, "HGET") == 0)
+        {
+            if (argv.size() == 3)
+            {
+                rondb_hget_command(ndb, argv, response);
+            }
+            else
+            {
+                char error_message[256];
+                snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                assign_generic_err_to_response(response, error_message);
+            }
+        }
+        else if (strcasecmp(command, "HSET") == 0)
+        {
+            if (argv.size() == 4)
+            {
+                rondb_hset_command(ndb, argv, response);
+            }
+            else
+            {
+                char error_message[256];
+                snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                assign_generic_err_to_response(response, error_message);
+            }
+        }
+        else if (strcasecmp(command, "HINCR") == 0)
+        {
+            if (argv.size() == 3)
+            {
+                rondb_hincr_command(ndb, argv, response);
+            }
+            else
+            {
+                char error_message[256];
+                snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                assign_generic_err_to_response(response, error_message);
+            }
+        }
         else
         {
             unsupported_command(argv, response);
@@ -209,7 +248,8 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                 If this limit is reached, the Ndb object will not create any new ones.
                 Hence, better to catch these cases early.
             */
-            print_args(argv);
+            printf("Failed to stop transaction\n");
+            //print_args(argv);
             printf("Number of transactions started: %lld\n", ndb->getClientStat(ndb->TransStartCount));
             printf("Number of transactions closed: %lld\n", ndb->getClientStat(ndb->TransCloseCount));
             exit(1);
