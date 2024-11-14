@@ -106,8 +106,7 @@ echo "Testing edge case large key length (Redis allows up to 512MB for the value
 edge_value=$(head -c 100000 < /dev/zero | tr '\0' 'b')
 set_and_get "$KEY:edge_large" "$edge_value"
 
-key="key"
-incr_key="$key:incr$RANDOM"
+incr_key="$KEY:incr${RANDOM}${RANDOM}"
 incr_output=$(redis-cli INCR "$incr_key")
 incr_result=$(redis-cli GET "$incr_key")
 if [[ "$incr_result" == 1 ]]; then
