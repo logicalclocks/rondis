@@ -112,9 +112,9 @@ jobs:
             echo "Success in run $i"
           done
 
+      - name: Run Redis benchmark
+        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t get,set -r 100 -P 10 --threads 3"
+
       - name: Show Rondis logs
         if: always()
         run: cat $LOCAL_RONDIS_LOG
-
-      - name: Run Redis benchmark
-        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t get,set -r 100 -P 10 --threads 3"
