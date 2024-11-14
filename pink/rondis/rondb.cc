@@ -6,6 +6,7 @@
 #include "common.h"
 #include "string/table_definitions.h"
 #include "string/commands.h"
+#include <strings.h>
 
 /*
     Ndb objects are not thread-safe. Hence, each worker thread / RonDB connection should
@@ -109,7 +110,8 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                         int worker_id)
 {
     // First check non-ndb commands
-    if (argv[0] == "ping")
+    const char *command = argv[0].c_str();
+    if (strcasecmp(command, "ping") == 0)
     {
         if (argv.size() != 1)
         {
@@ -156,7 +158,7 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
     else
     {
         Ndb *ndb = ndb_objects[worker_id];
-        if (argv[0] == "GET")
+        if (strcasecmp(command, "GET") == 0)
         {
             if (argv.size() == 2)
             {
@@ -169,11 +171,63 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                 assign_generic_err_to_response(response, error_message);
             }
         }
-        else if (argv[0] == "SET")
+        else if (strcasecmp(command, "SET") == 0)
         {
             if (argv.size() == 3)
             {
                 rondb_set_command(ndb, argv, response);
+            }
+            else
+            {
+                char error_message[256];
+                snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                assign_generic_err_to_response(response, error_message);
+            }
+        }
+        else if (strcasecmp(command, "INCR") == 0)
+        {
+            if (argv.size() == 2)
+            {
+                rondb_incr_command(ndb, argv, response);
+            }
+            else
+            {
+                char error_message[256];
+                snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                assign_generic_err_to_response(response, error_message);
+            }
+        }
+        else if (strcasecmp(command, "HGET") == 0)
+        {
+            if (argv.size() == 3)
+            {
+                rondb_hget_command(ndb, argv, response);
+            }
+            else
+            {
+                char error_message[256];
+                snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                assign_generic_err_to_response(response, error_message);
+            }
+        }
+        else if (strcasecmp(command, "HSET") == 0)
+        {
+            if (argv.size() == 4)
+            {
+                rondb_hset_command(ndb, argv, response);
+            }
+            else
+            {
+                char error_message[256];
+                snprintf(error_message, sizeof(error_message), REDIS_WRONG_NUMBER_OF_ARGS, argv[0].c_str());
+                assign_generic_err_to_response(response, error_message);
+            }
+        }
+        else if (strcasecmp(command, "HINCR") == 0)
+        {
+            if (argv.size() == 3)
+            {
+                rondb_hincr_command(ndb, argv, response);
             }
             else
             {
@@ -194,7 +248,8 @@ int rondb_redis_handler(const pink::RedisCmdArgsType &argv,
                 If this limit is reached, the Ndb object will not create any new ones.
                 Hence, better to catch these cases early.
             */
-            print_args(argv);
+            printf("Failed to stop transaction\n");
+            //print_args(argv);
             printf("Number of transactions started: %lld\n", ndb->getClientStat(ndb->TransStartCount));
             printf("Number of transactions closed: %lld\n", ndb->getClientStat(ndb->TransCloseCount));
             exit(1);

@@ -23,8 +23,8 @@ jobs:
     needs: [build-pink-macos]
     runs-on: ubuntu-latest
     env:
-      RONDB_VERSION: 22.10.5
-      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
+      RONDB_VERSION: 24.10.0
+      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-24.10.0-linux-glibc2.28-x86_64.tar.gz
       RONDB_DOCKER_DIR: /tmp/rondb-docker
       RONDB_TARBALL_FILE: rondb.tar.gz
       RONDB_PATH: /tmp/rondb
@@ -84,7 +84,7 @@ jobs:
         run: |
           docker exec -i mysqld_1 bash -c "mysql -uroot -e 'CREATE DATABASE redis;'"
           for sql_file in pink/rondis/sql/*.sql; do
-            cat "$sql_file" | docker exec -i mysqld_1 mysql -uroot
+            cat "$sql_file" | docker exec -i mysqld_1 mysql -uroot --database=redis
           done
 
       - name: Connect Docker network
@@ -97,6 +97,10 @@ jobs:
         run: |
           docker exec -w $DOCKER_WORK_DIR -e LD_LIBRARY_PATH=/tmp/rondb/lib \
             -t $CONTAINER_NAME pink/rondis/rondis 6379 mgmd_1:1186 2 > $LOCAL_RONDIS_LOG &
+
+      # Takes a few seconds before all connections are setup and started properly
+      - name: Wait for Rondis server to start properly
+        run: sleep 5
 
       # Running this multiple times to check for memory leaks and that overwrites/updates/deletes work
       - name: Run tests multiple times
