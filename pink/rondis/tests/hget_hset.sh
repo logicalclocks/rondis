@@ -2,9 +2,10 @@
 
 set -e
 
-# Change key suffix using script arguments
-HASH_KEY="key"
-KEY_SUFFIX=${1:-0}
+# Change key suffixes using script arguments
+HASH_KEY_SUFFIX=${1:-0}
+HASH_KEY="key_$HASH_KEY_SUFFIX"
+KEY_SUFFIX=${2:-0}
 KEY="test_key_$KEY_SUFFIX"
 
 # Function to set a value and retrieve it, then verify if it matches
