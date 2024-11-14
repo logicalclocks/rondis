@@ -108,6 +108,7 @@ jobs:
           for i in {1..50}; do
             docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
               "pink/rondis/tests/get_set.sh $((i % 3))"
+            docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
               "pink/rondis/tests/hget_hset.sh $((i % 5)) $((i % 3))"
             echo "Success in run $i"
           done
