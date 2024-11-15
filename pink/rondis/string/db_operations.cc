@@ -673,7 +673,7 @@ void incr_key_row(std::string *response,
                               sizeof(header_buf),
                               ":%lld\r\n",
                               new_incremented_value);
-    response->assign(header_buf);
+    response->append(header_buf);
     return;
 }
 
