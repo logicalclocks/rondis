@@ -43,7 +43,7 @@ int initNdbCodeIncr(std::string *response,
     code->add_const_reg(REG5, REG4, INCREMENT_VALUE);
     code->int64_to_str(REG3, REG1, REG5);           // Convert number to string
     code->add_const_reg(REG2, REG3, NUM_LEN_BYTES); // New value_start length
-    code->convert_size(REG3, REG0);                 // Write back length bytes in memory
+    code->write_size_mem(REG3, REG0);               // Write back length bytes in memory
 
     code->write_interpreter_output(REG5, OUTPUT_INDEX); // Write into output index 0
     code->write_from_mem(value_start_col, REG6, REG2);  // Write to column
