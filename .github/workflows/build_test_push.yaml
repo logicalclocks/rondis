@@ -117,7 +117,7 @@ jobs:
           done
 
       - name: Run Redis benchmark
-        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t incr,get,set,hget,hset,hincr -r 100 -P 10 --threads 3"
+        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t get,set,incr,hget,hset,hincr -r 100 -P 10 --threads 3"
 
       - name: Show Rondis logs
         if: always()

@@ -6,11 +6,10 @@ set -e
 KEY_SUFFIX=${1:-0}
 KEY="test_key_$KEY_SUFFIX"
 
-# Function to set a value and retrieve it, then verify if it matches
-function set_and_get() {
+function check_set() {
     local key="$1"
     local value="$2"
-    
+
     # SET the value in Redis
     if [[ -f "$value" ]]; then
         set_output=$(redis-cli --pipe <<EOF
@@ -23,10 +22,18 @@ EOF
 
     #echo $set_output
     if [[ $set_output == ERR* ]]; then
-        echo "FAIL: Could not SET $key with given value"
+        echo "FAIL: Could not SET $key with given value" >&2
         exit 1
     fi
+}
+
+# Function to set a value and retrieve it, then verify if it matches
+function set_and_get() {
+    local key="$1"
+    local value="$2"
     
+    check_set "$key" "$value"
+
     # GET the value
     local result=$(redis-cli GET "$key")
 
@@ -37,9 +44,9 @@ EOF
     if [[ "$expected_hash" == "$actual_hash" ]]; then
         echo "PASS: $key with value length ${#value}"
     else
-        echo "FAIL: $key with value length ${#value}; got length ${#result}"
-        echo "Expected hash:    $expected_hash"
-        echo "Received hash:    $actual_hash"
+        echo "FAIL: $key with value length ${#value}; got length ${#result}" >&2
+        echo "Expected hash:    $expected_hash" >&2
+        echo "Received hash:    $actual_hash" >&2
         exit 1
     fi
     echo
@@ -133,5 +140,29 @@ for i in {1..10}; do
         exit 1
     fi
 done
+
+# Create multi-value rows in parallel
+run_client() {
+    local client="$1"
+    local key="$2"
+    NUM_ITERATIONS=5
+    for ((i=1; i<=$NUM_ITERATIONS; i++)); do
+        # Generate a unique key for each client and iteration
+        local test_value=$(generate_random_chars 32000)
+        check_set "$key" "$test_value" > /dev/null
+        echo "PASS ($i/$NUM_ITERATIONS): client $client with key $key"
+    done
+}
+
+echo "Testing multi-value rows in parallel..."
+for ((client=1; client<=5; client++)); do
+    run_client $client "${KEY}:parallel_key" &
+    pids[$client]=$!
+done
+
+for pid in ${pids[*]}; do
+    wait $pid
+done
+echo "PASS: All parallel clients completed."
 
 echo "All tests completed."
