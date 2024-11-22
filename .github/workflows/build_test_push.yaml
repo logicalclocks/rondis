@@ -16,7 +16,10 @@ jobs:
 
       - run: brew install protobuf
 
-      - name: Build
+      - name: Build Slash
+        run: cd pink/third/slash/slash && make
+
+      - name: Build Pink
         run: cd pink && make static_lib
 
   build-and-run-redis-benchmark:
@@ -105,15 +108,17 @@ jobs:
       # Running this multiple times to check for memory leaks and that overwrites/updates/deletes work
       - name: Run tests multiple times
         run: |
-          for i in {1..100}; do
+          for i in {1..50}; do
             docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
-              "pink/rondis/tests/get_set.sh $((i % 2))"
+              "pink/rondis/tests/get_set.sh $((i % 3))"
+            docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
+              "pink/rondis/tests/hget_hset.sh $((i % 5)) $((i % 3))"
             echo "Success in run $i"
           done
+
+      - name: Run Redis benchmark
+        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t incr,get,set,hget,hset,hincr -r 100 -P 10 --threads 3"
 
       - name: Show Rondis logs
         if: always()
         run: cat $LOCAL_RONDIS_LOG
-
-      - name: Run Redis benchmark
-        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t get,set -r 100 -P 10 --threads 3"
