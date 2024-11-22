@@ -1,8 +1,7 @@
-CREATE TABLE redis.string_values(
+CREATE TABLE string_values(
     rondb_key BIGINT UNSIGNED NOT NULL,
     ordinal INT UNSIGNED NOT NULL,
     value VARBINARY(29500) NOT NULL,
-    PRIMARY KEY (rondb_key, ordinal),
-    FOREIGN KEY (rondb_key) REFERENCES redis.string_keys(rondb_key) ON UPDATE RESTRICT ON DELETE CASCADE
+    PRIMARY KEY (rondb_key, ordinal)
 ) ENGINE NDB,
-COMMENT = "NDB_TABLE=PARTITION_BALANCE=RP_BY_LDM_X_8" PARTITION BY KEY (rondb_key);
+COMMENT = "NDB_TABLE=PARTITION_BALANCE=RP_BY_LDM_X_8";

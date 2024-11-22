@@ -20,6 +20,7 @@ PinkConn::PinkConn(const int fd,
     : fd_(fd),
       ip_port_(ip_port),
       is_reply_(false),
+      close_(false),
 #ifdef __ENABLE_SSL
       ssl_(nullptr),
 #endif

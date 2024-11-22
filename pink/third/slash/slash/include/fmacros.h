@@ -36,7 +36,9 @@
 
 #if defined(__linux__)
 #define _GNU_SOURCE_REDIS
+#ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
+#endif
 #endif
 
 #if defined(_AIX)

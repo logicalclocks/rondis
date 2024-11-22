@@ -81,6 +81,7 @@ class PinkConn : public std::enable_shared_from_this<PinkConn> {
   }
 
   bool IsClose() { return close_; }
+  // This can be used by the application
   void SetClose(bool close) { close_ = close; }
 
   void set_last_interaction(const struct timeval &now) {

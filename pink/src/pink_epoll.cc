@@ -147,7 +147,8 @@ bool PinkEpoll::Register(const PinkItem& it, bool force) {
   }
   notify_queue_protector_.Unlock();
   if (success) {
-    write(notify_send_fd_, "", 1);
+    int ret_code = write(notify_send_fd_, "", 1);
+    if (ret_code < 0) success = false;
   }
   return success;
 }

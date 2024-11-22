@@ -258,7 +258,10 @@ int DeleteDir(const std::string& path)
     if (0 == ret) {
       continue;
     }
-    snprintf(chBuf, 256, "%s/%s", path.c_str(), ptr->d_name);
+    unsigned long int len = snprintf(chBuf, sizeof(chBuf), "%s/%s", path.c_str(), ptr->d_name);
+    if (len >= sizeof(chBuf)) {
+        return -1;
+    }
     ret = IsDir(chBuf);
     if (0 == ret) {
       //is dir

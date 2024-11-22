@@ -279,7 +279,7 @@ void BackendThread::InternalDebugPrint() {
     const std::vector<std::string>& tmp = to_send.second;
     for (const auto& tmp_to_send : tmp) {
       UNUSED(tmp_to_send);
-      log_info("%s %s\n", to_send.first.c_str(), tmp_to_send.c_str());
+      log_info("%d %s\n", to_send.first, tmp_to_send.c_str());
     }
   }
   }

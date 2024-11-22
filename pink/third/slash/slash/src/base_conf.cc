@@ -62,6 +62,7 @@ int BaseConf::LoadConf() {
           sep_sign = 1;
           break;
         }
+        [[fallthrough]];
       default:
         if (sep_sign == 0) {
           name[name_len++] = line[i];

@@ -14,10 +14,7 @@ endif
 
 all: rondis
 
-ifndef PINK_PATH
-  $(warning Warning: missing pink path, using default)
-  PINK_PATH=$(CURDIR)/../..
-endif
+PINK_PATH=$(CURDIR)/../..
 PINK_INCLUDE_DIR=$(PINK_PATH)
 PINK_LIBRARY=$(PINK_PATH)/pink/lib/libpink.a
 
@@ -48,7 +45,7 @@ endif
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
 # Use find to locate all .cc files in subdirectories
-SOURCES = $(CURDIR)/rondis.cc $(CURDIR)/rondb.cc $(CURDIR)/common.cc $(CURDIR)/string/table_definitions.cc $(CURDIR)/string/commands.cc $(CURDIR)/string/db_operations.cc
+SOURCES = $(CURDIR)/rondis.cc $(CURDIR)/rondb.cc $(CURDIR)/common.cc $(CURDIR)/string/table_definitions.cc $(CURDIR)/string/commands.cc $(CURDIR)/string/db_operations.cc $(CURDIR)/string/interpreted_code.cc
 OBJECTS = $(SOURCES:.cc=.o)
 
 # Target to build the executable "rondis"

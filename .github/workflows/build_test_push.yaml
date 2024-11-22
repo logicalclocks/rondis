@@ -16,14 +16,20 @@ jobs:
 
       - run: brew install protobuf
 
-      - name: Build
+      - name: Build Slash
+        run: cd pink/third/slash/slash && make
+
+      - name: Build Pink
         run: cd pink && make static_lib
 
   build-and-run-redis-benchmark:
     needs: [build-pink-macos]
     runs-on: ubuntu-latest
     env:
-      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-22.10.5-linux-glibc2.28-x86_64.tar.gz
+      RONDB_VERSION: 24.10.0
+      RONDB_TARBALL_URI: https://repo.hops.works/master/rondb-24.10.0-linux-glibc2.28-x86_64.tar.gz
+      RONDB_DOCKER_DIR: /tmp/rondb-docker
+      RONDB_TARBALL_FILE: rondb.tar.gz
       RONDB_PATH: /tmp/rondb
       IMAGE_NAME: rondis:latest
       CONTAINER_NAME: rondis
@@ -35,13 +41,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run rondb-docker
-        env:
-          RONDB_DOCKER_DIR: /tmp/rondb-docker
+      - name: Clone rondb-docker
+        run: git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git $RONDB_DOCKER_DIR
+
+      - name: Download RonDB
         run: |
-            path_now=$(pwd)
-            git clone -b release-0.7 https://github.com/logicalclocks/rondb-docker.git $RONDB_DOCKER_DIR
-            cd $RONDB_DOCKER_DIR && ./build_run_docker.sh -d \
+          wget $RONDB_TARBALL_URI -O $RONDB_DOCKER_DIR/$RONDB_TARBALL_FILE
+          mkdir -p $RONDB_PATH
+          tar xfz $RONDB_DOCKER_DIR/$RONDB_TARBALL_FILE -C $RONDB_PATH --strip-components=1
+
+      - name: Run rondb-docker
+        run: |
+            cd $RONDB_DOCKER_DIR
+            # The script expects a relative path to the tarball
+            ./build_run_docker.sh -d \
+              --rondb-tarball-path ./$RONDB_TARBALL_FILE \
+              --rondb-version $RONDB_VERSION \
               --size small \
               --num-mgm-nodes 1 \
               --node-groups 1 \
@@ -49,17 +64,10 @@ jobs:
               --num-mysql-nodes 1 \
               --num-rest-api-nodes 0 \
               --num-benchmarking-nodes 0
-            cd $path_now
 
       - name: Build Rondis image
         run: docker build -t $IMAGE_NAME .
 
-      - name: Download RonDB
-        run: |
-          wget $RONDB_TARBALL_URI -O /tmp/temp_tarball.tar.gz
-          mkdir -p $RONDB_PATH
-          tar xfz /tmp/temp_tarball.tar.gz -C $RONDB_PATH --strip-components=1
-        
       - name: Create Rondis environment
         run: |
           docker run -d \
@@ -79,7 +87,7 @@ jobs:
         run: |
           docker exec -i mysqld_1 bash -c "mysql -uroot -e 'CREATE DATABASE redis;'"
           for sql_file in pink/rondis/sql/*.sql; do
-            cat "$sql_file" | docker exec -i mysqld_1 mysql -uroot
+            cat "$sql_file" | docker exec -i mysqld_1 mysql -uroot --database=redis
           done
 
       - name: Connect Docker network
@@ -93,17 +101,23 @@ jobs:
           docker exec -w $DOCKER_WORK_DIR -e LD_LIBRARY_PATH=/tmp/rondb/lib \
             -t $CONTAINER_NAME pink/rondis/rondis 6379 mgmd_1:1186 2 > $LOCAL_RONDIS_LOG &
 
+      # Takes a few seconds before all connections are setup and started properly
+      - name: Wait for Rondis server to start properly
+        run: sleep 5
+
       # Running this multiple times to check for memory leaks and that overwrites/updates/deletes work
       - name: Run tests multiple times
         run: |
           for i in {1..50}; do
             docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
               "pink/rondis/tests/get_set.sh $((i % 3))"
+            docker exec -w $DOCKER_WORK_DIR -i $CONTAINER_NAME bash -c \
+              "pink/rondis/tests/hget_hset.sh $((i % 5)) $((i % 3))"
             echo "Success in run $i"
           done
 
       - name: Run Redis benchmark
-        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t get,set -c 2"
+        run: docker exec -i $CONTAINER_NAME bash -c "redis-benchmark -t get,set,incr,hget,hset,hincr -r 100 -P 10 --threads 3"
 
       - name: Show Rondis logs
         if: always()

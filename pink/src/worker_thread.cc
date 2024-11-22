@@ -120,6 +120,9 @@ void *WorkerThread::ThreadMain() {
           int32_t nread = read(pink_epoll_->notify_receive_fd(), bb, 2048);
           if (nread == 0) {
             continue;
+          } else if (nread == -1) {
+            log_warn("Read error on notify_receive_fd for fd");
+            continue;
           } else {
             for (int32_t idx = 0; idx < nread; ++idx) {
               PinkItem ti = pink_epoll_->notify_queue_pop();
@@ -186,7 +189,8 @@ void *WorkerThread::ThreadMain() {
             pink_epoll_->PinkModEvent(pfe->fd, 0, PinkEpoll::kRead);
             in_conn->set_is_reply(false);
             if (in_conn->IsClose()) {
-                 should_close = 1;
+              // If the application wants to close the connection
+              should_close = 1;
             }
           } else if (write_status == kWriteHalf) {
             continue;
@@ -271,10 +275,10 @@ void WorkerThread::DoCronTask() {
       ++iter;
     }
   }
-  for (const auto conn : to_close) {
+  for (const auto & conn : to_close) {
     CloseFd(conn);
   }
-  for (const auto conn : to_timeout) {
+  for (const auto & conn : to_timeout) {
     CloseFd(conn);
     server_thread_->handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
   }
@@ -300,7 +304,9 @@ bool WorkerThread::TryKillConn(const std::string& ip_port) {
 }
 
 void WorkerThread::CloseFd(std::shared_ptr<PinkConn> conn) {
-  close(conn->fd());
+  if (close(conn->fd()) != 0) {
+    log_warn("Closing fd failed");
+  }
   server_thread_->handle_->FdClosedHandle(conn->fd(), conn->ip_port());
 }
 

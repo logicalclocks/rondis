@@ -63,11 +63,7 @@ ifeq ($(NO_PB),1)
   				$(filter-out $(VERSION_CC) $(wildcard $(SRC_DIR)/pb_*), $(wildcard $(SRC_DIR)/*.cc))
 endif
 
-
-ifndef SLASH_PATH
-  $(warning Warning: missing slash path, using default)
-  SLASH_PATH=$(CURDIR)/third/slash
-endif
+SLASH_PATH=$(CURDIR)/third/slash
 SLASH_INCLUDE_DIR=$(SLASH_PATH)
 SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a
 
